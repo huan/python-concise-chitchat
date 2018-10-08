@@ -7,11 +7,11 @@ Concise Chit Chat
 ## Usage
 
 ```shell
-make download     # Download dataset & pre-trained model parameters
-make install      # Install Python dependencies
-make preprocess   # Pre-process dataset
-make train        # Train the model
-make chitchat     # Chat with the trained model
+make download     # download dataset & pre-trained model parameters
+make install      # install python dependencies
+make preprocess   # pre-process the dataset
+make train        # train the model
+make chitchat     # chat with it!
 ```
 
 ## AUTHOR

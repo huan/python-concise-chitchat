@@ -12,8 +12,8 @@ import tensorflow as tf
 tf.enable_eager_execution()
 
 # load the data
-current_sentence_sequence = np.load('data/current_sentence.npy')
-next_sentence_sequence = np.load('data/next_sentence.npy')
+question_sequence = np.load('data/questions.npy')
+answer_sequence = np.load('data/answers.npy')
 
 with open('data/tokenizer.pkl', 'rb') as f:
     tokenizer: tf.keras.preprocessing.text.Tokenizer = pickle.load(f)
@@ -48,27 +48,27 @@ for index in range(1, tokenizer.num_words):
     embedding_matrix[index, :] = glove_dict.get(word)
 
 # Use teacher forcing
-teacher_forcing_sentence = np.zeros((
-    next_sentence_sequence.shape[0],
+teacher_forcing_answer = np.zeros((
+    answer_sequence.shape[0],
     MAX_LEN,
     VOCABULARY_SIZE,
 ))
-for i, word_id_list in enumerate(next_sentence_sequence):
+for i, word_id_list in enumerate(answer_sequence):
     for j, word_id in enumerate(word_id_list):
         if j > 0:   # Skip the 'BOS'
-            teacher_forcing_sentence[i, j - 1, word_id] = 1
+            teacher_forcing_answer[i, j - 1, word_id] = 1
     if i % 5000 == 0:
         print('{} entries completed'.format(i))
 
 padded_current_sentence_list = tf.keras.preprocessing.sequence.pad_sequences(
-    current_sentence_sequence,
+    question_sequence,
     maxlen=20,
     dtype='int32',
     padding='post',
     truncating='post',
 )
 padded_next_sentence_list = tf.keras.preprocessing.sequence.pad_sequences(
-    next_sentence_sequence,
+    answer_sequence,
     maxlen=MAX_LEN,
     dtype='int32',
     padding='post',
@@ -104,26 +104,26 @@ dense_layer = tf.keras.layers.TimeDistributed(
     )
 )
 
-current_sentence_input_layer = tf.keras.layers.Input(
+question_input_layer = tf.keras.layers.Input(
     shape=(MAX_LEN, ),
     dtype='int32',
     name='current_sentence',
 )
-next_sentence_input_layer = tf.keras.layers.Input(
+answer_input_layer = tf.keras.layers.Input(
     shape=(MAX_LEN, ),
     dtype='int32',
     name='next_sentence',
 )
 
-current_sentence_embedding_layer = embedding_layer(current_sentence_input_layer)
-next_sentence_embedding_layer = embedding_layer(next_sentence_input_layer)
+question_embedding_layer = embedding_layer(question_input_layer)
+answer_embedding_layer = embedding_layer(answer_input_layer)
 
 encoded_state, hidden_state, cell_state = encoder_lstm_layer(
-    current_sentence_embedding_layer,
+    question_embedding_layer,
 )
 
 decoded_state, _, _ = decoder_lstm_layer(
-    next_sentence_embedding_layer,
+    answer_embedding_layer,
     initial_state=[
         hidden_state,
         cell_state,
@@ -134,8 +134,8 @@ predict_output = dense_layer(decoded_state)
 
 model = tf.keras.Model(
     [
-        current_sentence_input_layer,
-        next_sentence_input_layer
+        question_input_layer,
+        answer_input_layer
     ],
     predict_output,
 )
@@ -159,7 +159,7 @@ model.fit(
         padded_current_sentence_list,
         padded_next_sentence_list,
     ],
-    teacher_forcing_sentence,
+    teacher_forcing_answer,
     epochs=10,
     batch_size=16,
 )

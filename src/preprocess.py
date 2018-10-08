@@ -35,6 +35,7 @@ VOCABULARY_SIZE = 1000
 
 
 def preprocess_text(text: str) -> str:
+    """doc"""
     new_text = text
 
     new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)
@@ -98,7 +99,7 @@ def not_oov_tuple(id_text: LinesTuple) -> bool:
     return True
 
 
-movie_raw_lines_list: List[str] = []
+movie_lines_raw_list: List[str] = []
 
 # read in the Cornell Movie Dialogues data
 with open(
@@ -106,13 +107,13 @@ with open(
         'r',
         encoding='iso-8859-1',
 ) as file:
-    movie_raw_lines_list = file.read().split('\n')
+    movie_lines_raw_list = file.read().split('\n')
 
 # FIXME: for quick debug
-movie_raw_lines_list = movie_raw_lines_list[:50000]
+movie_lines_raw_list = movie_lines_raw_list[:50000]
 
 movie_dialog_tuple_list = (
-    functional.seq(movie_raw_lines_list)
+    functional.seq(movie_lines_raw_list)
     .map(raw_line_to_tuple)
     .map(preprocess_tuple)
     .filter(lambda lines_tuple: len(lines_tuple[1]) > 0)
@@ -126,8 +127,8 @@ print('movie_dialog_tuple_list: {}'.format(len(list(movie_dialog_tuple_list))))
 #
 
 print('fitting tokenizer ...')
-_, all_sentence_list = zip(*movie_dialog_tuple_list)
-tokenizer.fit_on_texts(all_sentence_list)
+_, all_dialog_list = zip(*movie_dialog_tuple_list)
+tokenizer.fit_on_texts(all_dialog_list)
 print('tokenizer fitted')
 
 with open('data/tokenizer.pkl', 'wb') as file1:
@@ -161,34 +162,34 @@ sorted_dialog_dict = collections.OrderedDict(
 print('sorted ...')
 
 
-current_sentence_list: List[str] = []
-next_sentence_list: List[str] = []
+question_list: List[str] = []
+answer_list: List[str] = []
 
 prev_id = 0
 for curr_id, curr_text in sorted_dialog_dict.items():
     if prev_id + 1 == curr_id:
         prev_text = sorted_dialog_dict[prev_id]
 
-        current_sentence_list.append(prev_text)
-        next_sentence_list.append(curr_text)
+        question_list.append(prev_text)
+        answer_list.append(curr_text)
 
     prev_id = curr_id
 
-current_sentence_sequence_list = tokenizer.texts_to_sequences(current_sentence_list)
-next_sentence_sequence_list = tokenizer.texts_to_sequences(next_sentence_list)
+question_sequence_list = tokenizer.texts_to_sequences(question_list)
+answer_sequence_list = tokenizer.texts_to_sequences(answer_list)
 
-np.save('data/current_sentence', current_sentence_sequence_list)
-np.save('data/next_sentence', next_sentence_sequence_list)
+np.save('data/questions', question_sequence_list)
+np.save('data/answers', answer_sequence_list)
 
 
 print('current/next: #{}/{}'.format(
-    len(current_sentence_sequence_list),
-    len(next_sentence_sequence_list),
+    len(question_sequence_list),
+    len(answer_sequence_list),
 ))
 
 for i in range(3):
-    print('current dialog {}: {}'.format(i, current_sentence_list[i]))
-    print('current sequence {}: {}'.format(i, current_sentence_sequence_list[i]))
-    print('next dialog {}: {}'.format(i, next_sentence_list[i]))
-    print('next sequence {}: {}'.format(i, next_sentence_sequence_list[i]))
+    print('question {}: {}'.format(i, question_list[i]))
+    print('question sequence {}: {}'.format(i, question_sequence_list[i]))
+    print('answer {}: {}'.format(i, answer_list[i]))
+    print('answer sequence {}: {}'.format(i, answer_sequence_list[i]))
 
