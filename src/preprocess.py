@@ -1,4 +1,4 @@
-"""get data"""
+"""Pre-process"""
 import pickle
 import re
 from typing import (
@@ -35,12 +35,6 @@ VOCABULARY_SIZE = 1000
 
 
 def preprocess_text(text: str) -> str:
-    """
-    do some basic preprocessing, filter out dialogues with more than 12 words,
-    and in the 12 or lesser words, take only the characters
-    till one of '!' or '.' or '?' comes
-    """
-
     new_text = text
 
     new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)
@@ -132,8 +126,8 @@ print('movie_dialog_tuple_list: {}'.format(len(list(movie_dialog_tuple_list))))
 #
 
 print('fitting tokenizer ...')
-_, movie_dialog_list = zip(*movie_dialog_tuple_list)
-tokenizer.fit_on_texts(movie_dialog_list)
+_, all_sentence_list = zip(*movie_dialog_tuple_list)
+tokenizer.fit_on_texts(all_sentence_list)
 print('tokenizer fitted')
 
 with open('data/tokenizer.pkl', 'wb') as file1:
@@ -156,8 +150,6 @@ print('OOV filtered ...')
 #
 
 
-# sort the dialogues into the proper sequence
-# based on the line number 'L...' in the data
 # https://stackoverflow.com/a/9001529/1123955
 
 print('sorting ...')
