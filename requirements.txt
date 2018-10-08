@@ -1,0 +1,4 @@
+embeddings
+chakin
+tensorflow
+pyfunctional
