@@ -2,7 +2,7 @@
 
 Concise Chit Chat
 
-- Colab URL: <https://colab.research.google.com/drive/1_TBoCV105ik8gmzbRTqoxIFajiGxCLfm>
+[![Colab Notebook](https://img.shields.io/badge/Google_Colab-Notebook-brightgreen.svg)](https://colab.research.google.com/drive/1_TBoCV105ik8gmzbRTqoxIFajiGxCLfm)
 
 ## Usage
 
