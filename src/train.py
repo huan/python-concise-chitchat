@@ -48,7 +48,7 @@ for index in range(1, tokenizer.num_words):
     embedding_matrix[index, :] = glove_dict.get(word)
 
 # Use teacher forcing
-teacher_forcing_answer = np.zeros((
+teacher_forcing_answers = np.zeros((
     answer_sequence.shape[0],
     MAX_LEN,
     VOCABULARY_SIZE,
@@ -56,18 +56,18 @@ teacher_forcing_answer = np.zeros((
 for i, word_id_list in enumerate(answer_sequence):
     for j, word_id in enumerate(word_id_list):
         if j > 0:   # Skip the 'BOS'
-            teacher_forcing_answer[i, j - 1, word_id] = 1
+            teacher_forcing_answers[i, j - 1, word_id] = 1
     if i % 5000 == 0:
         print('{} entries completed'.format(i))
 
-padded_current_sentence_list = tf.keras.preprocessing.sequence.pad_sequences(
+padded_question_sentences = tf.keras.preprocessing.sequence.pad_sequences(
     question_sequence,
     maxlen=20,
     dtype='int32',
     padding='post',
     truncating='post',
 )
-padded_next_sentence_list = tf.keras.preprocessing.sequence.pad_sequences(
+padded_answer_sentences = tf.keras.preprocessing.sequence.pad_sequences(
     answer_sequence,
     maxlen=MAX_LEN,
     dtype='int32',
@@ -156,10 +156,10 @@ model.compile(
 print('Start training ...')
 model.fit(
     [
-        padded_current_sentence_list,
-        padded_next_sentence_list,
+        padded_question_sentences,
+        padded_answer_sentences,
     ],
-    teacher_forcing_answer,
+    teacher_forcing_answers,
     epochs=10,
     batch_size=16,
 )

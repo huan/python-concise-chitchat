@@ -52,9 +52,11 @@ def preprocess_text(text: str) -> str:
             idx = match.start()
             new_text = new_text[:idx+1]
 
-    # Add BOS(Beginning of Sentence) and EOS(End of Sentence)
-    new_text = new_text.strip().lower()
-    new_text = '{} {} {}'.format(BOS.lower(), new_text, EOS.lower())
+    new_text = '{} {} {}'.format(
+        BOS,
+        new_text.strip(),
+        EOS,
+    ).lower()
 
     return new_text
 
@@ -182,7 +184,7 @@ np.save('data/questions', question_sequence_list)
 np.save('data/answers', answer_sequence_list)
 
 
-print('current/next: #{}/{}'.format(
+print('questions/answers: #{}/{}'.format(
     len(question_sequence_list),
     len(answer_sequence_list),
 ))
