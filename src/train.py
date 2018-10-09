@@ -49,11 +49,14 @@ for index in range(1, tokenizer.num_words):
     embedding_matrix[index, :] = glove_dict.get(word)
 
 # Use teacher forcing
-teacher_forcing_answers = np.zeros((
-    answer_sequence.shape[0],
-    MAX_LEN,
-    VOCABULARY_SIZE,
-))
+teacher_forcing_answers = np.zeros(
+    (
+        answer_sequence.shape[0],
+        MAX_LEN,
+        VOCABULARY_SIZE,
+    ),
+    dtype=np.float16,
+)
 for i, word_id_list in enumerate(answer_sequence):
     for j, word_id in enumerate(word_id_list):
         if j > 0:   # Skip the 'BOS'
@@ -64,14 +67,14 @@ for i, word_id_list in enumerate(answer_sequence):
 padded_question_sequence = tf.keras.preprocessing.sequence.pad_sequences(
     question_sequence,
     maxlen=MAX_LEN,
-    dtype='int32',
+    dtype=np.uint16,
     padding='post',
     truncating='post',
 )
 padded_answer_sequence = tf.keras.preprocessing.sequence.pad_sequences(
     answer_sequence,
     maxlen=MAX_LEN,
-    dtype='int32',
+    dtype=np.uint16,
     padding='post',
     truncating='post',
 )
@@ -107,12 +110,13 @@ dense_layer = tf.keras.layers.TimeDistributed(
 
 question_input_layer = tf.keras.layers.Input(
     shape=(MAX_LEN, ),
-    dtype='int32',
+    dtype=np.uint16,
     name='question',
 )
+
 answer_input_layer = tf.keras.layers.Input(
     shape=(MAX_LEN, ),
-    dtype='int32',
+    dtype=np.uint16,
     name='answer',
 )
 
@@ -136,7 +140,7 @@ decoded_output = dense_layer(decoded_state)
 model = tf.keras.Model(
     [
         question_input_layer,
-        answer_input_layer
+        answer_input_layer,
     ],
     decoded_output,
 )

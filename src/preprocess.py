@@ -112,7 +112,7 @@ with open(
     movie_lines_raw_list = file.read().split('\n')
 
 # FIXME: for quick debug
-movie_lines_raw_list = movie_lines_raw_list[:50000]
+movie_lines_raw_list = movie_lines_raw_list[:10000]
 
 movie_dialog_tuple_list = (
     functional.seq(movie_lines_raw_list)
