@@ -34,6 +34,10 @@ mypy:
 download:
 	./scripts/download.sh
 
+.PHONY: dataset
+dataset:
+	python3 ./scripts/generate-dataset.py > data/dataset.txt
+
 .PHONY: docker
 docker:
 	./scripts/docker.sh
