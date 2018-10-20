@@ -18,7 +18,7 @@ LinesDict = Dict[int, str]
 
 MAX_LEN = 12
 # set to None to unlimit
-MAX_DATASET_SIZE = None
+MAX_DATASET_SIZE = 128
 
 # https://www.zhihu.com/question/20118544/answer/35639696
 # 英语为母语的4岁儿童词汇量已经有5000个，8岁词汇量为10000个。
@@ -112,9 +112,9 @@ movie_dialog_tuple_list = (
     functional.seq(movie_lines_raw_list)
     .map(raw_line_to_tuple)
     .map(preprocess_tuple)
-    .filter(lambda lines_tuple: len(lines_tuple[1]) > 0)
+    .filter(lambda lines_tuple: len(lines_tuple[1]) > 3)
 )
-logging.info('movie_dialog_tuple_list: {}'.format(len(list(movie_dialog_tuple_list))))
+logging.info('movie_dialog_tuple_list: %d', len(list(movie_dialog_tuple_list)))
 
 #
 # 2
@@ -149,19 +149,20 @@ logging.info('OOV filtered ...')
 question_list: List[str] = []
 answer_list: List[str] = []
 
-count = 0
-prev_id = 0
-for curr_id, curr_text in sorted(dialog_dict.items()):
-    if prev_id + 1 == curr_id:
-        prev_text = dialog_dict[prev_id]
+with open('data/dataset.txt', 'w') as f:
+    count = 0
+    prev_id = 0
+    for curr_id, curr_text in sorted(dialog_dict.items()):
+        if prev_id + 1 == curr_id:
+            prev_text = dialog_dict[prev_id]
 
-        # question_list.append(prev_text)
-        # answer_list.append(curr_text)
-        print('{}\t{}'.format(
-            prev_text,
-            curr_text,
-        ))
-        count = count + 1
-    prev_id = curr_id
+            # question_list.append(prev_text)
+            # answer_list.append(curr_text)
+            f.write('{}\t{}\n'.format(
+                prev_text,
+                curr_text,
+            ))
+            count = count + 1
+        prev_id = curr_id
 
 logging.info('dataset generated. total %s pairs', count)
