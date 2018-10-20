@@ -10,6 +10,7 @@ LSTM_UNIT_NUM = 300
 LSTM_DROPOUT = 0.1
 LSTM_RECURRENT_DROPOUT = 0.1
 
+
 class ChitEncoder(tf.keras.Model):
     '''doc'''
     def __init__(
@@ -33,8 +34,8 @@ class ChitEncoder(tf.keras.Model):
 
     def call(self, inputs):
         output = self.embedding(inputs)
-        output, state = self.lstm(output)
-        return output, state
+        _, state_hidden, state_cell = self.lstm(output)
+        return state_hidden, state_cell
 
     def predict(self, inputs):
         pass
@@ -47,7 +48,7 @@ class ChitDecoder(tf.keras.Model):
             vocabulary_size: int,
     ) -> None:
         super().__init__()
-        self.lstm = tf.keras.layers.LSTM(
+        self.decoder_lstm = tf.keras.layers.LSTM(
             units=LSTM_UNIT_NUM,
             dropout=LSTM_DROPOUT,
             recurrent_dropout=LSTM_RECURRENT_DROPOUT,
@@ -62,11 +63,17 @@ class ChitDecoder(tf.keras.Model):
             )
         )
 
-    def call(self, inputs):
-        context, state = self.lstm(inputs)
-        context = self.dense(context)
-        output = self.softmax(context)
-        return output, state
+    def call(self, inputs, initial_state=None):
+        '''
+        initial_state = [state_hidden, state_cell]
+        '''
+        output, state_hidden, state_cell = self.decoder_lstm(
+            inputs,
+            initial_state=initial_state,
+        )
+        output = self.dense(state_hidden)
+        next_state = [state_hidden, state_cell]
+        return output, next_state
 
     def predict(self, inputs):
         pass
