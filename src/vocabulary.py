@@ -9,6 +9,7 @@ from typing import (
 )
 
 import tensorflow as tf
+import numpy as np
 
 
 class Vocabulary:
@@ -16,7 +17,7 @@ class Vocabulary:
     def __init__(self, raw_text: str) -> None:
         self.max_length = self.__max_length(raw_text)
         self.tokenizer = self.__tokenizer(raw_text)
-        self.size = len(self.tokenizer.word_index.keys())
+        self.size = len(self.tokenizer.word_index.keys()) + 1
 
     def __max_length(self, text: str) -> int:
         text_list = re.split(r'[\t\n]+', text)
@@ -44,3 +45,19 @@ class Vocabulary:
         word_list = self.tokenizer.sequences_to_texts(sequence)
         # [self.index_word.get(index) for index in sequence]
         return ' '.join(word_list)
+
+    def sentence_to_one_hot_list(self, sentence: str) -> np.ndarray:
+        '''doc'''
+        sequence = self.sentence_to_sequence(sentence)
+        one_hot_list = np.zeros(
+            (
+                self.max_length,
+                self.size,
+            ),
+            dtype=np.uint8,
+        )
+
+        for i, word_index in enumerate(sequence):
+            one_hot_list[i][word_index] = 1
+
+        return one_hot_list
