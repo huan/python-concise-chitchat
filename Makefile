@@ -2,6 +2,7 @@
 # Author: Huan LI <zixia@zixia.net> git.io/zixia
 
 SOURCE_GLOB=$(wildcard bin/*.py src/*.py tests/*.py)
+DATASET_FILENAME=data/dataset.txt
 
 .PHONY: all
 all : clean lint
@@ -36,7 +37,8 @@ download:
 
 .PHONY: dataset
 dataset:
-	python3 ./scripts/generate-dataset.py > data/dataset.txt
+	python3 ./scripts/generate-dataset.py > ${DATASET_FILENAME}
+	@echo "${DATASET_FILENAME} saved."
 
 .PHONY: docker
 docker:

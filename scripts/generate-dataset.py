@@ -8,7 +8,6 @@ from typing import (
     List,
     Tuple,
 )
-import collections
 import functional
 import tensorflow as tf
 
@@ -19,12 +18,12 @@ LinesDict = Dict[int, str]
 
 MAX_LEN = 12
 # set to None to unlimit
-MAX_DATASET_SIZE = 10000
+MAX_DATASET_SIZE = None
 
 # https://www.zhihu.com/question/20118544/answer/35639696
 # 英语为母语的4岁儿童词汇量已经有5000个，8岁词汇量为10000个。
 # 四级的词汇量大概为4000个左右，八级为10000个左右
-VOCABULARY_SIZE = 1000
+VOCABULARY_SIZE = 5000
 
 #
 # 1
@@ -159,10 +158,10 @@ for curr_id, curr_text in sorted(dialog_dict.items()):
         # question_list.append(prev_text)
         # answer_list.append(curr_text)
         print('{}\t{}'.format(
-          prev_text,
-          curr_text,
+            prev_text,
+            curr_text,
         ))
         count = count + 1
     prev_id = curr_id
 
-logging.info('dataset generated. total {} pairs'.format(count))
+logging.info('dataset generated. total %s pairs', count)
