@@ -145,7 +145,7 @@ model = tf.keras.Model(
     decoded_output,
 )
 
-adam = tf.train.AdamOptimizer()
+adam = tf.train.AdamOptimizer(learning_rate=1e-4)
 adam_with_clip_norm = tf.contrib.estimator.clip_gradients_by_norm(
     optimizer=adam,
     clip_norm=5,
