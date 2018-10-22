@@ -12,12 +12,21 @@ import tensorflow as tf
 import numpy as np
 
 
+START_TOKEN = '\t'
+END_TOKEN = '\n'
+
 class Vocabulary:
     '''doc'''
     def __init__(self, raw_text: str) -> None:
         self.max_length = self.__max_length(raw_text)
         self.tokenizer = self.__tokenizer(raw_text)
         self.size = len(self.tokenizer.word_index.keys()) + 1
+
+        self.start_token = START_TOKEN
+        self.end_token = END_TOKEN
+
+        self.start_token_index = self.tokenizer.word_index.get(START_TOKEN)
+        self.end_token_index = self.tokenizer.word_index.get(END_TOKEN)
 
     def __max_length(self, text: str) -> int:
         text_list = re.split(r'[\t\n]+', text)
@@ -31,7 +40,10 @@ class Vocabulary:
         '''doc'''
         tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
         tokenizer.fit_on_texts(
-            re.split(r'[\s\t\n]', text)
+            re.split(r'[\s\t\n]', text) + [
+                START_TOKEN,
+                END_TOKEN,
+            ]
         )
         return tokenizer
 
