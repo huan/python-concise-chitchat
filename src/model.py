@@ -26,25 +26,11 @@ class QuestionEncoder(tf.keras.Model):
         super().__init__()
         # self.max_length = max_length
 
-        self.embedding = tf.keras.layers.Embedding(
-            input_dim=vocabulary_size,
-            output_dim=EMBEDDING_DIMENTION,
-            name='embedding',
-        )
-        self.encoder_lstm = tf.keras.layers.LSTM(
-            units=LSTM_UNIT_NUM,
-            dropout=LSTM_DROPOUT,
-            recurrent_dropout=LSTM_RECURRENT_DROPOUT,
-            return_state=True,
-            name='encoder_lstm'
-        )
 
     def call(self, inputs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         '''
         inputs: [batch_size, max_length]
         '''
-        output = self.embedding(inputs)
-        _, state_hidden, state_cell = self.encoder_lstm(output)
         return state_hidden, state_cell
 
 
@@ -55,7 +41,61 @@ class AnswerDecoder(tf.keras.Model):
             vocabulary_size: int,
     ) -> None:
         super().__init__()
-        self.decoder_lstm = tf.keras.layers.LSTM(
+
+        self.vocabulary_size = vocabulary_size
+
+    def call(
+            self,
+            inputs,     # [batch_size, max_length]
+            initial_state=None
+    ) -> Tuple[tf.Tensor, List[tf.Tensor]]:
+        '''
+        initial_state = [state_hidden, state_cell]
+        '''
+)
+
+        state = initial_state
+
+        output, state_hidden, state_cell = self.decoder_lstm(
+            inputs_one_hot,
+            initial_state=state,
+        )
+        state = [state_hidden, state_cell]
+
+        output = self.dense(output)
+
+        # convert one_hot encoding to indices number
+        output = tf.argmax(output, -1).numpy()
+
+        return output, state
+
+
+class ChitChat(tf.keras.Model):
+    '''doc'''
+    def __init__(
+            self,
+            vocabulary_size: int,
+            max_length: int,
+    ) -> None:
+        super().__init__()
+
+        self.max_length = max_length
+        self.vocabulary_size = vocabulary_size
+
+        # [batch_size, max_length] -> [batch_size, max_length, vocabulary_size]
+        self.embedding = tf.keras.layers.Embedding(
+            input_dim=vocabulary_size,
+            output_dim=EMBEDDING_DIMENTION,
+            name='embedding',
+        )
+        self.lstm_encoder = tf.keras.layers.LSTM(
+            units=LSTM_UNIT_NUM,
+            dropout=LSTM_DROPOUT,
+            recurrent_dropout=LSTM_RECURRENT_DROPOUT,
+            return_state=True,
+            name='encoder_lstm'
+        )
+        self.lstm_decoder = tf.keras.layers.LSTM(
             units=LSTM_UNIT_NUM,
             dropout=LSTM_DROPOUT,
             recurrent_dropout=LSTM_RECURRENT_DROPOUT,
@@ -71,39 +111,6 @@ class AnswerDecoder(tf.keras.Model):
             )
         )
 
-    def call(
-            self,
-            inputs,
-            initial_state=None
-    ) -> Tuple[tf.Tensor, List[tf.Tensor]]:
-        '''
-        initial_state = [state_hidden, state_cell]
-        '''
-        output, state_hidden, state_cell = self.decoder_lstm(
-            inputs,
-            initial_state=initial_state,
-        )
-        next_state = [state_hidden, state_cell]
-
-        output = self.dense(output)
-
-        return output, next_state
-
-
-class ChitChat(tf.keras.Model):
-    '''doc'''
-    def __init__(
-            self,
-            vocabulary_size: int,
-            max_length: int,
-    ) -> None:
-        super().__init__()
-
-        self.max_length = max_length
-        self.vocabulary_size = vocabulary_size
-
-        self.question_encoder = QuestionEncoder(vocabulary_size)
-        self.answer_decoder = AnswerDecoder(vocabulary_size)
 
     def call(
             self,
@@ -117,15 +124,42 @@ class ChitChat(tf.keras.Model):
             if decoder_inputs is None:
                 raise ValueError('decoder_inputs not set when training')
 
-            initial_state = self.question_encoder(inputs)
-            output, = self.answer_decoder(decoder_inputs, initial_state)
+            return self.training_call(inputs, decoder_inputs)
+        else:
+            return self.normal_call(inputs)
 
-            return output
+    def training_call(
+        self,
+        inputs: tf.Tensor,
+        decoder_inputs: tf.Tensor,
+    ) -> tf.Tensor:
+        '''with teacher forcing'''
+        question_embedding = self.embedding(inputs)
+        answer_embedding = self.embedding(decoder_inputs)
 
-        # not training
+        _, encoder_state_hidden, encoder_state_cell = self.lstm_encoder(question_embedding)
 
-        state_hidden, state_cell = self.question_encoder(inputs)
-        state = [state_hidden, state_cell]
+        state = [encoder_state_hidden, encoder_state_cell]
+        for t in rang(self.max_length - 1):
+            output, state_hidden, state_cell = self.lstm_decoder(
+                answer_embedding[:, t, :],
+                initial_state=state
+            )
+            state = [state_hidden, state_cell]
+            outputs[:, t + 1, :] = output
+
+        return outputs
+
+    def normal_call(
+        self,
+        inputs: tf.Tensor,
+    ) -> tf.Tensor:
+        # inputs: [batch_size, max_length]
+
+        outputs = self.embedding(inputs)
+        # outputs: [batch_size, max_length, vocabulary_size]
+
+        _, encoder_state_hidden, encoder_state_cell = self.lstm_encoder(outputs)
 
         outputs = np.zeros(
             (
@@ -136,13 +170,22 @@ class ChitChat(tf.keras.Model):
             dtype=tf.bfloat16,
         )
 
-        for t in range(self.max_length):
-            state_decoded, state = self.answer_decoder(inputs[:, t, :], state)
-            outputs[:, t, :] = state_decoded
+        outputs[:, 0, :] = self.vocabulary_START_EMBEDDING
 
-        return outputs
+        for t in rang(self.max_length - 1):
+            output, decoder_state_hidden, decoder_state_cell = self.decoder_lstm(
+                outputs[:, t, :],
+                initial_state=[
+                    encoder_state_hidden,
+                    encoder_state_cell,
+                ],
+            )
+            outputs[:, t + 1, :] = decoder_state_hidden  # output[-1]
 
-    def predict(self, inputs, temperature=1.):
+        outputs = self.dense(outputs)
+        return outputs,
+
+    def predict(self, inputs, state=None, temperature=1.):
         '''predict'''
         batch_size, _ = tf.shape(inputs)
         logits = self(inputs)
@@ -164,18 +207,24 @@ def train() -> int:
     vocabulary = Vocabulary(data_loader.raw_text)
 
     model = ChitChat(
-        vocabulary_size=data_loader.size+1,
-        embedding_dimention=EMBEDDING_DIMENTION,
+        max_length=20,
+        vocabulary_size=vocabulary.size,
     )
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     for batch_index in range(num_batches):
-        sentence, next_sentence = data_loader.get_batch(batch_size)
+        batch_sentence, batch_next_sentence = data_loader.get_batch(batch_size)
 
-        sequence = vocabulary.sentence_to_seqence(sentence)
-        next_sequence = vocabulary.sentence_to_seqence(next_sentence)
+        encoder_input = [
+            vocabulary.sentence_to_sequence(sentence)
+            for sentence in batch_sentence
+        ]
+        decoder_input = [
+            vocabulary.sentence_to_sequence(next_sentence)
+            for next_sentence in batch_next_sentence
+        ]
 
         with tf.GradientTape() as tape:
-            word_logit_pred = model(sequence)
+            word_logit_pred = model(encoder_input)
             loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=word_logit_pred)
             print("batch %d: loss %f" % (batch_index, loss.numpy()))
 
