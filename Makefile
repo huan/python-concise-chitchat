@@ -1,7 +1,7 @@
 # Makefile for self-adaptive-programming
 # Author: Huan LI <zixia@zixia.net> git.io/zixia
 
-SOURCE_GLOB=$(wildcard bin/*.py src/*.py tests/*.py)
+SOURCE_GLOB=$(wildcard bin/*.py chit-chat/*.py tests/*.py)
 
 .PHONY: all
 all : clean lint
@@ -48,7 +48,7 @@ install:
 
 .PHONY: pytest
 pytest:
-	PYTHONPATH=src/ pytest src/ tests/
+	PYTHONPATH=chit-chat/ pytest chit-chat/ tests/
 
 .PHONY: test
 test: check-version pytest
@@ -58,17 +58,13 @@ check-version:
 	./scripts/check_version.py
 
 code:
-	# code src/	# vscode need to use src as root dir
-	PYTHONPATH=src/ code .
-
-.PHONY: preprocess
-preprocess:
-	PYTHONPATH=src/ python3 src/preprocess.py
+	# vscode need to know where the modules are by setting PYTHONPATH
+	PYTHONPATH=chit-chat/ code .
 
 .PHONY: train
 train:
-	PYTHONPATH=src/ python3 src/train.py
+	PYTHONPATH=chit-chat/ python3 bin/train.py
 
 .PHONY: chitchat
 chitchat:
-	PYTHONPATH=src/ python3 src/chitchat.py
+	PYTHONPATH=chit-chat/ python3 chit-chat/chitchat.py
