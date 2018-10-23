@@ -1,14 +1,21 @@
 '''doc'''
 
+import re
+
 import tensorflow as tf
 import numpy as np
-# from typing import (
-#     List,
-#     # Tuple,
-# )
+from typing import (
+    Dict,
+    # Tuple,
+)
 
-from dataloader import DataLoader
-from vocabulary import Vocabulary
+from .config import (
+    DONE,
+    GO,
+    MAX_LENGTH,
+)
+from .data_loader import DataLoader
+# from .vocabulary import Vocabulary
 
 EMBEDDING_DIMENTION = 100
 LSTM_UNIT_NUM = 300
@@ -20,17 +27,16 @@ class ChitChat(tf.keras.Model):
     '''doc'''
     def __init__(
             self,
-            vocabulary: Vocabulary,
-            max_length: int,
+            word_index: Dict[str, int],
     ) -> None:
         super().__init__()
 
-        self.max_length = max_length
-        self.vocabulary = vocabulary
+        self.word_index = word_index
+        self.vocabulary_size = len(word_index.keys()) + 1   # the additional 0
 
         # [batch_size, max_length] -> [batch_size, max_length, vocabulary_size]
         self.embedding = tf.keras.layers.Embedding(
-            input_dim=self.vocabulary.size,
+            input_dim=self.vocabulary_size,
             output_dim=EMBEDDING_DIMENTION,
             mask_zero=True,
             name='embedding',
@@ -52,7 +58,7 @@ class ChitChat(tf.keras.Model):
         )
 
         self.dense = tf.keras.layers.Dense(
-            units=self.vocabulary.size,
+            units=self.vocabulary_size,
             activation='softmax',
         )
 
@@ -90,11 +96,11 @@ class ChitChat(tf.keras.Model):
         batch_size = tf.shape(queries)[0]
         outputs = tf.zeros(shape=(
             batch_size,             # batch_size
-            self.max_length,        # max time step
+            MAX_LENGTH,        # max time step
             LSTM_UNIT_NUM,          # dimention of hidden state
         ))
 
-        for t in range(self.max_length):
+        for t in range(MAX_LENGTH):
             _, *state = self.lstm_decoder(
                 teacher_forcing_embedding[:, t, :],
                 initial_state=state
@@ -116,28 +122,26 @@ class ChitChat(tf.keras.Model):
 
         _, *states = self.lstm_encoder(outputs)
 
-        start_token_embedding = self.embedding([[
-            self.vocabulary.start_token_indice
-        ]]).numpy().flatten()
+        go_embedding = self.__indice_to_embedding(self.word_index[GO])
 
         batch_size = tf.shape(queries)[0]
         outputs = tf.zeros((
             batch_size,         # batch_size
-            self.max_length,    # max time step
+            MAX_LENGTH,    # max time step
         ))
 
-        output = start_token_embedding
+        output = go_embedding
 
-        for t in range(self.max_length):
+        for t in range(MAX_LENGTH):
             _, *states = self.lstm_decoder(
                 output,
                 initial_state=states,
             )
             output = self.dense(states[0])  # (hidden, cell)[0]
-            # [self.vocabulary.size]
+            # [self.vocabulary_size]
 
             outputs[:, t] = output
-            if tf.argmax(output) == self.vocabulary.end_token_indice:
+            if tf.argmax(output) == self.word_index[DONE]:
                 break
 
         return outputs
@@ -151,10 +155,10 @@ class ChitChat(tf.keras.Model):
 
         _, *states = self.lstm_encoder(outputs)
 
-        output = self.__indice_to_embedding(self.vocabulary.start_token_indice)
+        output = self.__indice_to_embedding(self.word_index[GO])
 
-        outputs = np.zeros((self.max_length,))
-        for t in range(self.max_length):
+        outputs = np.zeros((MAX_LENGTH,))
+        for t in range(MAX_LENGTH):
             output, *states = self.lstm_decoder(output, initial_state=states)
             output = self.dense(states[0])
 
@@ -164,7 +168,7 @@ class ChitChat(tf.keras.Model):
 
             outputs[t] = indice
 
-            if indice == self.vocabulary.end_token_indice:
+            if indice == self.word_index[DONE]:
                 break
 
     def __logit_to_indice(
@@ -177,13 +181,12 @@ class ChitChat(tf.keras.Model):
         convert one hot encoding to indice with temperature
         '''
         prob = tf.nn.softmax(inputs / temperature).numpy()
-        indice = np.random.choice(self.vocabulary.size, p=prob)
+        indice = np.random.choice(self.vocabulary_size, p=prob)
         return indice
 
     def __indice_to_embedding(self, indice: int) -> tf.Tensor:
-        embedding = self.embedding([[indice]]).numpy().flatten()
+        embedding = self.embedding([[indice]]).reshape(-1)
         return embedding
-
 
 
 def train() -> int:
@@ -192,15 +195,19 @@ def train() -> int:
     learning_rate = 1e-3
     num_batches = 10
     batch_size = 128
-    max_length = 20
 
     data_loader = DataLoader()
-    vocabulary = Vocabulary(data_loader.raw_text)
+    # vocabulary = Vocabulary(data_loader.raw_text)
 
-    chitchat = ChitChat(
-        max_length=max_length,
-        vocabulary=vocabulary,
+    tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
+    tokenizer.fit_on_texts(
+        re.split(
+            r'[\s\t\n]',
+            data_loader.raw_text + [GO, DONE]
+        )
     )
+
+    chitchat = ChitChat(tokenizer.word_index)
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
@@ -208,30 +215,26 @@ def train() -> int:
         batch_query, batch_response = data_loader.get_batch(batch_size)
 
         encoder_input = [
-            vocabulary.sentence_to_sequence(
-                [vocabulary.start_token]
-                    + sentence
-                    + [vocabulary.end_token]
-            )
-            for sentence in batch_query
+            tokenizer.texts_to_sequences(query)
+            for query in batch_query
         ]
         decoder_input = [
-            vocabulary.sentence_to_sequence(
-                [vocabulary.start_token]
-                + next_sentence
-            )
-            for next_sentence in batch_response
+            tokenizer.texts_to_sequences(response)
+            for response in batch_response
         ]
         decoder_target = [
-            vocabulary.sentence_to_sequence(
-                next_sentence
-                + [vocabulary.end_token]
+            tokenizer.texts_to_sequences(
+                response[1:]    # get rid of the start GO
             )
-            for next_sentence in batch_response
+            for response in batch_response
         ]
 
         with tf.GradientTape() as tape:
-            sequence_logit_pred = chitchat(encoder_input)
+            sequence_logit_pred = chitchat(
+                inputs=encoder_input,
+                teacher_forcing_inputs=decoder_input,
+                training=True,
+            )
             loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=sequence_logit_pred)
             print("batch %d: loss %f" % (batch_index, loss.numpy()))
 

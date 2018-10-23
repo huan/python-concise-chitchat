@@ -2,19 +2,19 @@
 Vocabulary
 '''
 import re
-from typing import (
-    # Any,
-    List,
-    # Tuple,
-)
+# from typing import (
+#     # Any,
+#     List,
+#     # Tuple,
+# )
 
 import tensorflow as tf
-import numpy as np
+# import numpy as np
 
 from .config import (
     GO,
     DONE,
-    MAX_LENGTH,
+    # MAX_LENGTH,
 )
 
 
@@ -38,29 +38,29 @@ class Vocabulary:
         )
         return tokenizer
 
-    def sentence_to_sequence(self, sentence: str) -> List[int]:
-        '''doc'''
-        word_list = re.split(r'\s+', sentence.strip())
-        return self.tokenizer.texts_to_sequences(word_list)
+    # def sentence_to_sequence(self, sentence: str) -> List[int]:
+    #     '''doc'''
+    #     word_list = re.split(r'\s+', sentence.strip())
+    #     return self.tokenizer.texts_to_sequences(word_list)
 
-    def sequence_to_sentence(self, sequence: List[int]) -> str:
-        '''doc'''
-        word_list = self.tokenizer.sequences_to_texts(sequence)
-        # [self.index_word.get(index) for index in sequence]
-        return ' '.join(word_list)
+    # def sequence_to_sentence(self, sequence: List[int]) -> str:
+    #     '''doc'''
+    #     word_list = self.tokenizer.sequences_to_texts(sequence)
+    #     # [self.index_word.get(index) for index in sequence]
+    #     return ' '.join(word_list)
 
-    def sentence_to_one_hot_list(self, sentence: str) -> np.ndarray:
-        '''doc'''
-        sequence = self.sentence_to_sequence(sentence)
-        one_hot_list = np.zeros(
-            (
-                MAX_LENGTH,
-                self.size,
-            ),
-            dtype=np.uint8,
-        )
+    # def sentence_to_one_hot_list(self, sentence: str) -> np.ndarray:
+    #     '''doc'''
+    #     sequence = self.sentence_to_sequence(sentence)
+    #     one_hot_list = np.zeros(
+    #         (
+    #             MAX_LENGTH,
+    #             self.size,
+    #         ),
+    #         dtype=np.uint8,
+    #     )
 
-        for i, word_index in enumerate(sequence):
-            one_hot_list[i][word_index] = 1
+    #     for i, word_index in enumerate(sequence):
+    #         one_hot_list[i][word_index] = 1
 
-        return one_hot_list
+    #     return one_hot_list
