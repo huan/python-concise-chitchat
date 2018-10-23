@@ -2,10 +2,10 @@
 
 import tensorflow as tf
 import numpy as np
-from typing import (
-    List,
-    Tuple,
-)
+# from typing import (
+#     List,
+#     Tuple,
+# )
 
 from dataloader import DataLoader
 from vocabulary import Vocabulary
@@ -14,41 +14,6 @@ EMBEDDING_DIMENTION = 100
 LSTM_UNIT_NUM = 300
 LSTM_DROPOUT = 0.1
 LSTM_RECURRENT_DROPOUT = 0.1
-
-class AnswerDecoder(tf.keras.Model):
-    '''doc'''
-    def __init__(
-            self,
-            vocabulary_size: int,
-    ) -> None:
-        super().__init__()
-
-        self.vocabulary_size = vocabulary_size
-
-    def call(
-            self,
-            inputs,     # [batch_size, max_length]
-            initial_state=None
-    ) -> Tuple[tf.Tensor, List[tf.Tensor]]:
-        '''
-        initial_state = [state_hidden, state_cell]
-        '''
-)
-
-        state = initial_state
-
-        output, state_hidden, state_cell = self.decoder_lstm(
-            inputs_one_hot,
-            initial_state=state,
-        )
-        state = [state_hidden, state_cell]
-
-        output = self.dense(output)
-
-        # convert one_hot encoding to indices number
-        output = tf.argmax(output, -1).numpy()
-
-        return output, state
 
 
 class ChitChat(tf.keras.Model):
@@ -75,7 +40,7 @@ class ChitChat(tf.keras.Model):
             dropout=LSTM_DROPOUT,
             recurrent_dropout=LSTM_RECURRENT_DROPOUT,
             return_state=True,
-            name='encoder_lstm'
+            name='lstm_encoder'
         )
         self.lstm_decoder = tf.keras.layers.LSTM(
             units=LSTM_UNIT_NUM,
@@ -83,15 +48,15 @@ class ChitChat(tf.keras.Model):
             recurrent_dropout=LSTM_RECURRENT_DROPOUT,
             return_state=True,
             return_sequences=True,
-            name='decoder_lstm',
+            name='lstm_decoder',
         )
 
         self.dense = tf.keras.layers.Dense(
-            units=vocabulary_size,
+            units=self.vocabulary.size,
             activation='softmax',
         )
 
-        self.time_distributed = tf.keras.layers.TimeDistributed(
+        self.time_distributed_dense = tf.keras.layers.TimeDistributed(
             self.dense
         )
 
@@ -103,75 +68,76 @@ class ChitChat(tf.keras.Model):
     ) -> tf.Tensor:
         '''call'''
 
-        if (training):
-            if decoder_inputs is None:
-                raise ValueError('decoder_inputs not set when training')
-
-            return self.training_call(inputs, decoder_inputs)
-        else:
+        if not training:
             return self.normal_call(inputs)
 
+        if decoder_inputs is None:
+            raise ValueError('decoder_inputs not set when training')
+
+        return self.training_call(inputs, decoder_inputs)
+
     def training_call(
-        self,
-        inputs: tf.Tensor,
-        decoder_inputs: tf.Tensor,
+            self,
+            questions: tf.Tensor,
+            answers: tf.Tensor,
     ) -> tf.Tensor:
         '''with teacher forcing'''
-        question_embedding = self.embedding(inputs)
-        answer_embedding = self.embedding(decoder_inputs)
+        questions_embedding = self.embedding(questions)
+        answers_embedding = self.embedding(answers)
 
-        _, encoder_state_hidden, encoder_state_cell = self.lstm_encoder(question_embedding)
+        _, *state = self.lstm_encoder(questions_embedding)
 
-        state = [encoder_state_hidden, encoder_state_cell]
-        for t in rang(self.max_length - 1):
-            output, state_hidden, state_cell = self.lstm_decoder(
-                answer_embedding[:, t, :],
+        outputs = tf.zeros(
+            (
+                tf.shape(questions)[0],
+                self.max_length,
+            ),
+            dtype=tf.bfloat16,
+        )
+
+        for t in range(self.max_length):
+            output, *state = self.lstm_decoder(
+                answers_embedding[:, t, :],
                 initial_state=state
             )
-            state = [state_hidden, state_cell]
-            outputs[:, t + 1, :] = output
+            outputs[:, t, :] = output
 
+        outputs = self.time_distributed_dense(outputs)
         return outputs
 
     def normal_call(
-        self,
-        inputs: tf.Tensor,
+            self,
+            inputs: tf.Tensor,
     ) -> tf.Tensor:
         # inputs: [batch_size, max_length]
 
         outputs = self.embedding(inputs)
         # outputs: [batch_size, max_length, vocabulary_size]
 
-        _, encoder_state_hidden, encoder_state_cell = self.lstm_encoder(outputs)
+        _, *state = self.lstm_encoder(outputs)
 
-        outputs = np.zeros(
+        start_token_embedding = self.embedding([[[
+            self.vocabulary.start_token_index
+        ]]]).numpy().flatten()
+
+        outputs = tf.zeros(
             (
                 tf.shape(inputs)[0],  # batch_size
                 self.max_length,
-                self.vocabulary.size
             ),
             dtype=tf.bfloat16,
         )
 
-        outputs[:, 0, :] = tf.one_hot(
-            self.vocabulary.start_token_index,
-            self.vocabulary.size,
-        )
-
-        for t in rang(self.max_length - 1):
-            output, decoder_state_hidden, decoder_state_cell = self.decoder_lstm(
-                outputs[:, t, :],
-                initial_state=[
-                    encoder_state_hidden,
-                    encoder_state_cell,
-                ],
+        output = start_token_embedding
+        for t in range(self.max_length):
+            output, *state = self.lstm_decoder(
+                output,
+                initial_state=state,
             )
-            outputs[:, t + 1, :] = decoder_state_hidden  # output[-1]
+            outputs[:, t, :] = output
 
-            self.dense()
-
-        outputs = self.dense(outputs)
-        return outputs,
+        outputs = self.time_distributed_dense(outputs)
+        return outputs
 
     def predict(self, inputs, state=None, temperature=1.):
         '''predict'''
@@ -179,7 +145,7 @@ class ChitChat(tf.keras.Model):
         logits = self(inputs)
         prob = tf.nn.softmax(logits / temperature).numpy()
         return np.array([
-            np.random.choice(self.vocabulary_size, p=prob[i, :])
+            np.random.choice(self.vocabulary.size, p=prob[i, :])
             for i in range(batch_size.numpy())
         ])
 
