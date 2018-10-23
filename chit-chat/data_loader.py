@@ -10,7 +10,7 @@ from typing import (
 
 import numpy as np
 
-from .config import (
+from config import (
     GO,
     DONE,
 )

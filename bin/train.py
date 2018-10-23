@@ -1,6 +1,10 @@
 '''train'''
 import re
+
+import numpy as np
 import tensorflow as tf
+
+tf.enable_eager_execution()
 
 from config import (
     DONE,
@@ -8,7 +12,8 @@ from config import (
     MAX_LENGTH,
 )
 from data_loader import DataLoader
-from chitchat import ChitChat
+from model import ChitChat
+
 
 def train() -> int:
     '''doc'''
@@ -24,8 +29,8 @@ def train() -> int:
     tokenizer.fit_on_texts(
         re.split(
             r'[\s\t\n]',
-            data_loader.raw_text + [GO, DONE]
-        )
+            data_loader.raw_text,
+        ) + [GO, DONE]
     )
 
     chitchat = ChitChat(tokenizer.word_index)
@@ -68,13 +73,16 @@ def train() -> int:
             print("batch %d: loss %f" % (batch_index, loss.numpy()))
 
         grads = tape.gradient(loss, chitchat.variables)
-        optimizer.apply_gradients(grads_and_vars=zip(grads, chitchat.variables))
+        optimizer.apply_gradients(
+            grads_and_vars=zip(grads, chitchat.variables)
+        )
 
     return 0
 
 
 def pad_seq(seq) -> tf.Tensor:
     '''doc'''
+    seq = np.array(seq)
     return tf.keras.preprocessing.sequence.pad_sequences(
         seq,
         maxlen=MAX_LENGTH,

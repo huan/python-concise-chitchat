@@ -5,7 +5,7 @@ from typing import (
     Dict,
 )
 
-from .config import (
+from config import (
     DONE,
     GO,
     MAX_LENGTH,
@@ -194,6 +194,9 @@ class ChitChat(tf.keras.Model):
 #         for t in range(400):
 #             y_pred = chitchat.predict(X, diversity)
 #             print(data_loader.indices_char[y_pred[0]], end='', flush=True)
-#             X = np.concatenate([X[:, 1:], np.expand_dims(y_pred, axis=1)], axis=-1)
-
+#             X = np.concatenate(
+#                 [X[:, 1:],
+#                 np.expand_dims(y_pred, axis=1)],
+#                 axis=-1
+#             )
 #     return
