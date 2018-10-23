@@ -1,12 +1,8 @@
 '''doc'''
-
-import re
-
 import tensorflow as tf
 import numpy as np
 from typing import (
     Dict,
-    # Tuple,
 )
 
 from .config import (
@@ -14,7 +10,7 @@ from .config import (
     GO,
     MAX_LENGTH,
 )
-from .data_loader import DataLoader
+# from .data_loader import DataLoader
 # from .vocabulary import Vocabulary
 
 EMBEDDING_DIMENTION = 100
@@ -189,69 +185,15 @@ class ChitChat(tf.keras.Model):
         return embedding
 
 
-def train() -> int:
-    '''doc'''
-    ####################
-    learning_rate = 1e-3
-    num_batches = 10
-    batch_size = 128
+# def inference() -> None:
+#     '''inference'''
+#     X_, _ = data_loader.get_batch(seq_length, 1)
+#     for diversity in [0.2, 0.5, 1.0, 1.2]:
+#         X = X_
+#         print("diversity %f:" % diversity)
+#         for t in range(400):
+#             y_pred = chitchat.predict(X, diversity)
+#             print(data_loader.indices_char[y_pred[0]], end='', flush=True)
+#             X = np.concatenate([X[:, 1:], np.expand_dims(y_pred, axis=1)], axis=-1)
 
-    data_loader = DataLoader()
-    # vocabulary = Vocabulary(data_loader.raw_text)
-
-    tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
-    tokenizer.fit_on_texts(
-        re.split(
-            r'[\s\t\n]',
-            data_loader.raw_text + [GO, DONE]
-        )
-    )
-
-    chitchat = ChitChat(tokenizer.word_index)
-
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-
-    for batch_index in range(num_batches):
-        batch_query, batch_response = data_loader.get_batch(batch_size)
-
-        encoder_input = [
-            tokenizer.texts_to_sequences(query)
-            for query in batch_query
-        ]
-        decoder_input = [
-            tokenizer.texts_to_sequences(response)
-            for response in batch_response
-        ]
-        decoder_target = [
-            tokenizer.texts_to_sequences(
-                response[1:]    # get rid of the start GO
-            )
-            for response in batch_response
-        ]
-
-        with tf.GradientTape() as tape:
-            sequence_logit_pred = chitchat(
-                inputs=encoder_input,
-                teacher_forcing_inputs=decoder_input,
-                training=True,
-            )
-            loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=sequence_logit_pred)
-            print("batch %d: loss %f" % (batch_index, loss.numpy()))
-
-        grads = tape.gradient(loss, chitchat.variables)
-        optimizer.apply_gradients(grads_and_vars=zip(grads, chitchat.variables))
-
-    return 0
-
-def inference() -> None:
-    '''inference'''
-    X_, _ = data_loader.get_batch(seq_length, 1)
-    for diversity in [0.2, 0.5, 1.0, 1.2]:
-        X = X_
-        print("diversity %f:" % diversity)
-        for t in range(400):
-            y_pred = chitchat.predict(X, diversity)
-            print(data_loader.indices_char[y_pred[0]], end='', flush=True)
-            X = np.concatenate([X[:, 1:], np.expand_dims(y_pred, axis=1)], axis=-1)
-
-    return
+#     return
