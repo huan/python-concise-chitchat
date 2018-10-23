@@ -11,28 +11,18 @@ from typing import (
 import tensorflow as tf
 import numpy as np
 
-
-START_TOKEN = '\b'
-END_TOKEN = '\a'
+from .config import (
+    GO,
+    DONE,
+    MAX_LENGTH,
+)
 
 
 class Vocabulary:
     '''doc'''
     def __init__(self, raw_text: str) -> None:
-        self.max_length = self.__max_length(raw_text)
         self.tokenizer = self.__tokenizer(raw_text)
         self.size = len(self.tokenizer.word_index.keys()) + 1
-
-        self.start_token = START_TOKEN
-        self.end_token = END_TOKEN
-
-        self.start_token_indice = self.tokenizer.word_index.get(START_TOKEN)
-        self.end_token_indice = self.tokenizer.word_index.get(END_TOKEN)
-
-    def __max_length(self, text: str) -> int:
-        text_list = re.split(r'[\t\n]+', text)
-        length_list = [len(re.split(r'\s+', text)) for text in text_list]
-        return max(length_list)
 
     def __tokenizer(
             self,
@@ -42,8 +32,8 @@ class Vocabulary:
         tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
         tokenizer.fit_on_texts(
             re.split(r'[\s\t\n]', text) + [
-                START_TOKEN,
-                END_TOKEN,
+                GO,
+                DONE,
             ]
         )
         return tokenizer
@@ -64,7 +54,7 @@ class Vocabulary:
         sequence = self.sentence_to_sequence(sentence)
         one_hot_list = np.zeros(
             (
-                self.max_length,
+                MAX_LENGTH,
                 self.size,
             ),
             dtype=np.uint8,
