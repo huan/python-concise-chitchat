@@ -12,8 +12,9 @@ import tensorflow as tf
 import numpy as np
 
 
-START_TOKEN = '\t'
-END_TOKEN = '\n'
+START_TOKEN = '\b'
+END_TOKEN = '\a'
+
 
 class Vocabulary:
     '''doc'''
@@ -25,8 +26,8 @@ class Vocabulary:
         self.start_token = START_TOKEN
         self.end_token = END_TOKEN
 
-        self.start_token_index = self.tokenizer.word_index.get(START_TOKEN)
-        self.end_token_index = self.tokenizer.word_index.get(END_TOKEN)
+        self.start_token_indice = self.tokenizer.word_index.get(START_TOKEN)
+        self.end_token_indice = self.tokenizer.word_index.get(END_TOKEN)
 
     def __max_length(self, text: str) -> int:
         text_list = re.split(r'[\t\n]+', text)

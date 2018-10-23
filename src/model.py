@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 # from typing import (
 #     List,
-#     Tuple,
+#     # Tuple,
 # )
 
 from dataloader import DataLoader
@@ -63,91 +63,127 @@ class ChitChat(tf.keras.Model):
     def call(
             self,
             inputs: tf.Tensor,
-            decoder_inputs: tf.Tensor=None,
+            teacher_forcing_inputs: tf.Tensor=None,
             training=None,
     ) -> tf.Tensor:
         '''call'''
 
         if not training:
-            return self.normal_call(inputs)
+            return self.__call_for_normal(inputs)
 
-        if decoder_inputs is None:
+        if teacher_forcing_inputs is None:
             raise ValueError('decoder_inputs not set when training')
 
-        return self.training_call(inputs, decoder_inputs)
+        return self.__call_for_training(inputs, teacher_forcing_inputs)
 
-    def training_call(
+    def __call_for_training(
             self,
-            questions: tf.Tensor,
-            answers: tf.Tensor,
+            queries: tf.Tensor,
+            teacher_forcing_responses: tf.Tensor,
     ) -> tf.Tensor:
         '''with teacher forcing'''
-        questions_embedding = self.embedding(questions)
-        answers_embedding = self.embedding(answers)
+        queries_embedding = self.embedding(queries)
+        teacher_forcing_embedding = self.embedding(teacher_forcing_responses)
 
-        _, *state = self.lstm_encoder(questions_embedding)
+        _, *state = self.lstm_encoder(queries_embedding)
 
-        outputs = tf.zeros(
-            (
-                tf.shape(questions)[0],
-                self.max_length,
-            ),
-            dtype=tf.bfloat16,
-        )
+        batch_size = tf.shape(queries)[0]
+        outputs = tf.zeros(shape=(
+            batch_size,             # batch_size
+            self.max_length,        # max time step
+            LSTM_UNIT_NUM,          # dimention of hidden state
+        ))
 
         for t in range(self.max_length):
-            output, *state = self.lstm_decoder(
-                answers_embedding[:, t, :],
+            _, *state = self.lstm_decoder(
+                teacher_forcing_embedding[:, t, :],
                 initial_state=state
             )
-            outputs[:, t, :] = output
+            outputs[:, t, :] = state[0]     # (state_hidden, state_cell)[0]
 
         outputs = self.time_distributed_dense(outputs)
         return outputs
 
-    def normal_call(
+    def __call_for_normal(
             self,
-            inputs: tf.Tensor,
+            queries: tf.Tensor,
     ) -> tf.Tensor:
-        # inputs: [batch_size, max_length]
+        '''doc'''
+        # [batch_size, max_length]
 
-        outputs = self.embedding(inputs)
-        # outputs: [batch_size, max_length, vocabulary_size]
+        outputs = self.embedding(queries)
+        # [batch_size, max_length, vocabulary_size]
 
-        _, *state = self.lstm_encoder(outputs)
+        _, *states = self.lstm_encoder(outputs)
 
-        start_token_embedding = self.embedding([[[
-            self.vocabulary.start_token_index
-        ]]]).numpy().flatten()
+        start_token_embedding = self.embedding([[
+            self.vocabulary.start_token_indice
+        ]]).numpy().flatten()
 
-        outputs = tf.zeros(
-            (
-                tf.shape(inputs)[0],  # batch_size
-                self.max_length,
-            ),
-            dtype=tf.bfloat16,
-        )
+        batch_size = tf.shape(queries)[0]
+        outputs = tf.zeros((
+            batch_size,         # batch_size
+            self.max_length,    # max time step
+        ))
 
         output = start_token_embedding
-        for t in range(self.max_length):
-            output, *state = self.lstm_decoder(
-                output,
-                initial_state=state,
-            )
-            outputs[:, t, :] = output
 
-        outputs = self.time_distributed_dense(outputs)
+        for t in range(self.max_length):
+            _, *states = self.lstm_decoder(
+                output,
+                initial_state=states,
+            )
+            output = self.dense(states[0])  # (hidden, cell)[0]
+            # [self.vocabulary.size]
+
+            outputs[:, t] = output
+            if tf.argmax(output) == self.vocabulary.end_token_indice:
+                break
+
         return outputs
 
-    def predict(self, inputs, state=None, temperature=1.):
-        '''predict'''
-        batch_size, _ = tf.shape(inputs)
-        logits = self(inputs)
-        prob = tf.nn.softmax(logits / temperature).numpy()
-        return np.array([
-            np.random.choice(self.vocabulary.size, p=prob[i, :])
-            for i in range(batch_size.numpy())
-        ])
+    def predict(self, inputs: tf.Tensor, temperature=1.) -> tf.Tensor:
+        '''
+        inputs: queries [1, max_length]
+        outputs: responses [1, max_length]
+        '''
+        outputs = self.embedding(inputs)
+
+        _, *states = self.lstm_encoder(outputs)
+
+        output = self.__indice_to_embedding(self.vocabulary.start_token_indice)
+
+        outputs = np.zeros((self.max_length,))
+        for t in range(self.max_length):
+            output, *states = self.lstm_decoder(output, initial_state=states)
+            output = self.dense(states[0])
+
+            # align the embedding value
+            indice = self.__logit_to_indice(output, temperature=temperature)
+            output = self.__indice_to_embedding(indice)
+
+            outputs[t] = indice
+
+            if indice == self.vocabulary.end_token_indice:
+                break
+
+    def __logit_to_indice(
+            self,
+            inputs,
+            temperature=1.,
+    ) -> int:
+        '''
+        [vocabulary_size]
+        convert one hot encoding to indice with temperature
+        '''
+        prob = tf.nn.softmax(inputs / temperature).numpy()
+        indice = np.random.choice(self.vocabulary.size, p=prob)
+        return indice
+
+    def __indice_to_embedding(self, indice: int) -> tf.Tensor:
+        embedding = self.embedding([[indice]]).numpy().flatten()
+        return embedding
+
 
 
 def train() -> int:
@@ -169,7 +205,7 @@ def train() -> int:
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
     for batch_index in range(num_batches):
-        batch_sentence, batch_next_sentence = data_loader.get_batch(batch_size)
+        batch_query, batch_response = data_loader.get_batch(batch_size)
 
         encoder_input = [
             vocabulary.sentence_to_sequence(
@@ -177,21 +213,21 @@ def train() -> int:
                     + sentence
                     + [vocabulary.end_token]
             )
-            for sentence in batch_sentence
+            for sentence in batch_query
         ]
         decoder_input = [
             vocabulary.sentence_to_sequence(
                 [vocabulary.start_token]
                 + next_sentence
             )
-            for next_sentence in batch_next_sentence
+            for next_sentence in batch_response
         ]
         decoder_target = [
             vocabulary.sentence_to_sequence(
                 next_sentence
                 + [vocabulary.end_token]
             )
-            for next_sentence in batch_next_sentence
+            for next_sentence in batch_response
         ]
 
         with tf.GradientTape() as tape:

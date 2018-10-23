@@ -9,6 +9,8 @@ from typing import (
 
 import numpy as np
 
+from vocabulary import Vocabulary
+
 DATASET_URL = 'https://github.com/zixia/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
 DATASET_FILE_NAME = 'concise-chit-chat-dataset.txt'
 
@@ -16,7 +18,9 @@ DATASET_FILE_NAME = 'concise-chit-chat-dataset.txt'
 class DataLoader():
     '''data loader'''
 
-    def __init__(self) -> None:
+    def __init__(self, vocabulary: Vocabulary) -> None:
+        self.vocabulary = vocabulary
+
         # path = tf.keras.utils.get_file(DATASET_FILE_NAME, origin=DATASET_URL)
 
         # XXX
@@ -31,7 +35,7 @@ class DataLoader():
         # XXX
         # print('raw_text', raw_text.split('\n'))
 
-        self.left_sentence_list, self.right_sentence_list \
+        self.query_list, self.response_list \
             = self.raw_text_to_sentence_list_tuple(self.raw_text)
 
         # left_sequence_list, right_sequence_list \
@@ -40,7 +44,7 @@ class DataLoader():
         # self.corpus_left = self.sequence_list_to_numpy(left_sequence_list)
         # self.corpus_right = self.sequence_list_to_numpy(right_sequence_list)
 
-        self.size = len(self.left_sentence_list)
+        self.size = len(self.query_list)
 
     def get_batch(self, batch_size=32) -> Tuple[List[str], List[str]]:
         '''get batch'''
@@ -49,14 +53,14 @@ class DataLoader():
             self.size,
             size=batch_size,
         )
-        left = self.left_sentence_list[random_index_list]
-        right = self.right_sentence_list[random_index_list]
+        query_list = self.query_list[random_index_list]
+        response_list = self.response_list[random_index_list]
 
         # [batch_size, seq_length], [batch_size, ]
         # print(left.shape)
         # print(right.shape)
 
-        return left.tolist(), right.tolist()
+        return query_list, response_list
 
     def raw_text_to_sentence_list_tuple(
             self,
@@ -64,15 +68,15 @@ class DataLoader():
     ) -> Tuple[List[str], List[str]]:
         '''doc'''
         line_list = raw_text.strip('\n').split('\n')
-        left_right_list = [
+        query_response_list = [
             (
                 line.split('\t')[0],
                 line.split('\t')[1],
             )
             for line in line_list
         ]
-        left_sentence_list, right_sentence_list = zip(*left_right_list)
+        query_list, response_list = zip(*query_response_list)
         return (
-            np.array(left_sentence_list),
-            np.array(right_sentence_list),
+            np.array(query_list),
+            np.array(response_list),
         )
