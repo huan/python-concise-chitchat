@@ -53,7 +53,7 @@ class DataLoader():
         batch_queries = self.queries[batch_indices]
         batch_responses = self.responses[batch_indices]
 
-        return batch_queries.tolist(), batch_responses.tolist()
+        return batch_queries, batch_responses
 
     def parse_raw_text(
             self,

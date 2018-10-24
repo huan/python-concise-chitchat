@@ -15,22 +15,24 @@ from data_loader import DataLoader
 from model import ChitChat
 
 
+tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
+
+
 def train() -> int:
     '''doc'''
     ####################
     learning_rate = 1e-3
     num_batches = 10
-    batch_size = 128
+    batch_size = 8
 
     data_loader = DataLoader()
     # vocabulary = Vocabulary(data_loader.raw_text)
 
-    tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
     tokenizer.fit_on_texts(
-        re.split(
+        [GO, DONE] + re.split(
             r'[\s\t\n]',
             data_loader.raw_text,
-        ) + [GO, DONE]
+        )
     )
 
     chitchat = ChitChat(tokenizer.word_index)
@@ -38,22 +40,19 @@ def train() -> int:
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
     for batch_index in range(num_batches):
-        batch_query, batch_response = data_loader.get_batch(batch_size)
+        queries, responses = data_loader.get_batch(batch_size)
 
-        encoder_input = pad_seq([
-            tokenizer.texts_to_sequences(query)
-            for query in batch_query
-        ])
-        decoder_input = pad_seq([
-            tokenizer.texts_to_sequences(response)
-            for response in batch_response
-        ])
-        decoder_target = pad_seq([
-            tokenizer.texts_to_sequences(
-                response[1:]    # get rid of the start GO
-            )
-            for response in batch_response
-        ])
+        encoder_input = texts_to_padded_sequences(queries)
+
+        decoder_input = texts_to_padded_sequences(responses)
+
+        decoder_target = tf.concat(
+            (
+                decoder_input[:, 1:],   # get rid of the start GO
+                tf.zeros((batch_size, 1), dtype=tf.int32),
+            ),
+            -1,
+        )
 
         with tf.GradientTape() as tape:
             sequence_logit_pred = chitchat(
@@ -61,6 +60,8 @@ def train() -> int:
                 teacher_forcing_inputs=decoder_input,
                 training=True,
             )
+
+            import pdb; pdb.set_trace()
 
             # implment the following contrib function in a loop ?
             # https://stackoverflow.com/a/41135778/1123955
@@ -70,6 +71,7 @@ def train() -> int:
                 decoder_target,
                 tf.ones_like(decoder_target),
             )
+            # TODO: mask length ?
             print("batch %d: loss %f" % (batch_index, loss.numpy()))
 
         grads = tape.gradient(loss, chitchat.variables)
@@ -80,16 +82,18 @@ def train() -> int:
     return 0
 
 
-def pad_seq(seq) -> tf.Tensor:
+def texts_to_padded_sequences(text: str) -> tf.Tensor:
     '''doc'''
-    seq = np.array(seq)
-    return tf.keras.preprocessing.sequence.pad_sequences(
-        seq,
+    sequences = tokenizer.texts_to_sequences(text)
+    padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(
+        sequences,
         maxlen=MAX_LENGTH,
-        dtype=tf.uint16,
         padding='post',
         truncating='post',
     )
+
+    # return tf.convert_to_tensor(padded_sequences)
+    return padded_sequences
 
 
 def main() -> int:

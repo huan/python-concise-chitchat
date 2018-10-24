@@ -84,8 +84,11 @@ class ChitChat(tf.keras.Model):
             teacher_forcing_responses: tf.Tensor,
     ) -> tf.Tensor:
         '''with teacher forcing'''
-        queries_embedding = self.embedding(queries)
-        teacher_forcing_embedding = self.embedding(teacher_forcing_responses)
+
+        queries_embedding = self.embedding(tf.convert_to_tensor(queries))
+        teacher_forcing_embedding = self.embedding(
+            tf.convert_to_tensor(teacher_forcing_responses)
+        )
 
         _, *state = self.lstm_encoder(queries_embedding)
 
@@ -94,11 +97,11 @@ class ChitChat(tf.keras.Model):
             batch_size,             # batch_size
             MAX_LENGTH,        # max time step
             LSTM_UNIT_NUM,          # dimention of hidden state
-        ))
+        )).numpy()
 
         for t in range(MAX_LENGTH):
             _, *state = self.lstm_decoder(
-                teacher_forcing_embedding[:, t, :],
+                tf.reshape(teacher_forcing_embedding[:, t, :], (batch_size, 1, -1)),
                 initial_state=state
             )
             outputs[:, t, :] = state[0]     # (state_hidden, state_cell)[0]
