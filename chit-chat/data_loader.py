@@ -40,7 +40,10 @@ class DataLoader():
         self.queries, self.responses \
             = self.parse_raw_text(self.raw_text)
 
-    def get_batch(self, batch_size=32) -> Tuple[List[List[str]], List[List[str]]]:
+    def get_batch(
+            self,
+            batch_size=32,
+    ) -> Tuple[List[List[str]], List[List[str]]]:
         '''get batch'''
         # print('corpus_list', self.corpus)
         batch_indices = np.random.choice(
@@ -50,28 +53,19 @@ class DataLoader():
         batch_queries = self.queries[batch_indices]
         batch_responses = self.responses[batch_indices]
 
-        return batch_queries, batch_responses
+        return batch_queries.tolist(), batch_responses.tolist()
 
     def parse_raw_text(
             self,
             raw_text: str
     ) -> Tuple[List[List[str]], List[List[str]]]:
         '''doc'''
-        line_list = raw_text.strip('\n').split('\n')
+        query_list = []
+        response_list = []
 
-        query_list: List[List[str]] = []
-        response_list: List[List[str]] = []
-
-        for line in line_list:
+        for line in raw_text.strip('\n').split('\n'):
             query, response = line.split('\t')
-
-            query_word_list = re.split(r'\s+', query.strip())
-            response_word_list = re.split(r'\s+', response.strip())
-
-            query_word_list = [GO] + query_word_list + [DONE]
-            response_word_list = [GO] + response_word_list + [DONE]
-
-            query_list.append(query_word_list)
-            response_list.append(response_word_list)
+            query_list.append('{} {} {}'.format(GO, query, DONE))
+            response_list.append('{} {} {}'.format(GO, response, DONE))
 
         return np.array(query_list), np.array(response_list)

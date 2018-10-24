@@ -9,7 +9,7 @@ from typing import (
 import pytest                   # type: ignore
 # pylint: disable=W0621
 
-from dataloader import DataLoader
+from data_loader import DataLoader
 
 
 @pytest.fixture(scope='module')
@@ -28,13 +28,26 @@ def test_dataloader_smoke_testing(
     assert len(left) == EXPECTED_BATCH_SIZE, 'should get back batch size'
 
 
-def test_dataloader_batch_random_and_type(
+def test_dataloader_batch_random(
         loader: DataLoader,
 ) -> None:
     '''doc'''
-    left, _ = loader.get_batch()
-    sample = left[0]
-    left, _ = loader.get_batch()
-    assert isinstance(left, list), 'should get list for left sentence list'
-    assert isinstance(sample, str), 'should get str type for sample item'
-    assert sample != left[0]
+    queries1, _ = loader.get_batch()
+    queries2, _ = loader.get_batch()
+
+    not_equal = False
+    for i, value in enumerate(queries1):
+        if value != queries2[i]:
+            not_equal = True
+
+    assert not_equal, 'should different between the batches'
+
+def test_dataloader_batch_type(
+        loader: DataLoader,
+) -> None:
+    '''doc'''
+    queries, _ = loader.get_batch()
+    print(type(queries))
+    assert isinstance(queries, list), 'should get list for queries'
+    assert isinstance(queries[0], str),\
+        'should get str type for item from queries'
