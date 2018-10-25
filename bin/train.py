@@ -22,8 +22,8 @@ def train() -> int:
     '''doc'''
     ####################
     learning_rate = 1e-3
-    num_batches = 10
-    batch_size = 8
+    num_batches = 100
+    batch_size = 32
 
     data_loader = DataLoader()
     # vocabulary = Vocabulary(data_loader.raw_text)
@@ -38,6 +38,8 @@ def train() -> int:
     chitchat = ChitChat(tokenizer.word_index)
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+
+    # import pdb; pdb.set_trace()
 
     for batch_index in range(num_batches):
         queries, responses = data_loader.get_batch(batch_size)
@@ -61,7 +63,7 @@ def train() -> int:
                 training=True,
             )
 
-            import pdb; pdb.set_trace()
+            weights = tf.ones(tf.shape(decoder_target))
 
             # implment the following contrib function in a loop ?
             # https://stackoverflow.com/a/41135778/1123955
@@ -69,7 +71,7 @@ def train() -> int:
             loss = tf.contrib.seq2seq.sequence_loss(
                 sequence_logit_pred,
                 decoder_target,
-                tf.ones_like(decoder_target),
+                weights,
             )
             # TODO: mask length ?
             print("batch %d: loss %f" % (batch_index, loss.numpy()))
