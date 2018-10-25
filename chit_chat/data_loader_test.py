@@ -9,7 +9,7 @@ from typing import (
 import pytest                   # type: ignore
 # pylint: disable=W0621
 
-from data_loader import DataLoader
+from .data_loader import DataLoader
 
 
 @pytest.fixture(scope='module')

@@ -5,7 +5,7 @@ from typing import (
     Dict,
 )
 
-from config import (
+from .config import (
     DONE,
     GO,
     MAX_LENGTH,
@@ -13,10 +13,8 @@ from config import (
 # from .data_loader import DataLoader
 # from .vocabulary import Vocabulary
 
-EMBEDDING_DIMENTION = 100
-LSTM_UNIT_NUM = 300
-LSTM_DROPOUT = 0.1
-LSTM_RECURRENT_DROPOUT = 0.1
+EMBEDDING_DIMENTION = 50
+LSTM_UNIT_NUM = 100
 
 
 class ChitChat(tf.keras.Model):
@@ -35,27 +33,19 @@ class ChitChat(tf.keras.Model):
             input_dim=self.vocabulary_size,
             output_dim=EMBEDDING_DIMENTION,
             mask_zero=True,
-            name='embedding',
         )
         self.lstm_encoder = tf.keras.layers.LSTM(
             units=LSTM_UNIT_NUM,
-            dropout=LSTM_DROPOUT,
-            recurrent_dropout=LSTM_RECURRENT_DROPOUT,
             return_state=True,
-            name='lstm_encoder'
         )
         self.lstm_decoder = tf.keras.layers.LSTM(
             units=LSTM_UNIT_NUM,
-            dropout=LSTM_DROPOUT,
-            recurrent_dropout=LSTM_RECURRENT_DROPOUT,
             return_state=True,
             return_sequences=True,
-            name='lstm_decoder',
         )
 
         self.dense = tf.keras.layers.Dense(
             units=self.vocabulary_size,
-            activation='softmax',
         )
 
         self.time_distributed_dense = tf.keras.layers.TimeDistributed(
@@ -101,9 +91,13 @@ class ChitChat(tf.keras.Model):
 
         for t in range(MAX_LENGTH):
             _, *state = self.lstm_decoder(
-                tf.reshape(teacher_forcing_embedding[:, t, :], (batch_size, 1, -1)),
+                tf.expand_dims(
+                    teacher_forcing_embedding[:, t, :],
+                    1,
+                ),
                 initial_state=state
             )
+            # import pdb; pdb.set_trace()
             outputs[:, t, :] = state[0]     # (state_hidden, state_cell)[0]
 
         outputs = self.time_distributed_dense(outputs)

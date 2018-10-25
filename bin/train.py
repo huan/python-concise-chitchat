@@ -1,19 +1,17 @@
 '''train'''
 import re
 
-import numpy as np
 import tensorflow as tf
 
-tf.enable_eager_execution()
-
-from config import (
+from chit_chat import (
+    DataLoader,
+    ChitChat,
     DONE,
     GO,
     MAX_LENGTH,
 )
-from data_loader import DataLoader
-from model import ChitChat
 
+tf.enable_eager_execution()
 
 tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
 
@@ -22,8 +20,8 @@ def train() -> int:
     '''doc'''
     ####################
     learning_rate = 1e-3
-    num_batches = 100
-    batch_size = 32
+    num_batches = 4000
+    batch_size = 64
 
     data_loader = DataLoader()
     # vocabulary = Vocabulary(data_loader.raw_text)
@@ -35,11 +33,13 @@ def train() -> int:
         )
     )
 
+    print('Dataset size: {}, Vocabulari size: {}'.format(
+        data_loader.size,
+        len(tokenizer.word_index.keys()),
+    ))
     chitchat = ChitChat(tokenizer.word_index)
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-
-    # import pdb; pdb.set_trace()
 
     for batch_index in range(num_batches):
         queries, responses = data_loader.get_batch(batch_size)
@@ -53,8 +53,15 @@ def train() -> int:
                 decoder_input[:, 1:],   # get rid of the start GO
                 tf.zeros((batch_size, 1), dtype=tf.int32),
             ),
-            -1,
+            axis=-1,
         )
+
+        weights = tf.cast(
+            tf.not_equal(decoder_target, 0),
+            tf.float32,
+        )
+
+        # import pdb; pdb.set_trace()
 
         with tf.GradientTape() as tape:
             sequence_logit_pred = chitchat(
@@ -62,8 +69,6 @@ def train() -> int:
                 teacher_forcing_inputs=decoder_input,
                 training=True,
             )
-
-            weights = tf.ones(tf.shape(decoder_target))
 
             # implment the following contrib function in a loop ?
             # https://stackoverflow.com/a/41135778/1123955

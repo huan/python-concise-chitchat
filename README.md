@@ -18,7 +18,10 @@ make chitchat     # chat with it!
 - [Understand the Difference Between Return Sequences and Return States for LSTMs in Keras](https://machinelearningmastery.com/return-sequences-and-return-states-for-lstms-in-keras/)
 - [Practical Guide of RNN in Tensorflow and Keras Introduction](https://paulx-cn.github.io/blog/4th_Blog/)
 - [Sequence Tagging with Tensorflow](https://guillaumegenthial.github.io/sequence-tagging-with-tensorflow.html)
-
+- [Design and build a chatbot using data from the Cornell Movie Dialogues corpus, using Keras](https://github.com/sekharvth/simple-chatbot-keras)
+- [PyTorch Chatbot Tutorial](https://pytorch.org/tutorials/beginner/chatbot_tutorial.html)
+- [A ten-minute introduction to sequence-to-sequence learning in Keras](https://blog.keras.io/a-ten-minute-introduction-to-sequence-to-sequence-learning-in-keras.html)
+  
 ## AUTHOR
 
 [@zixia](https://github.com/zixia) [Huan LI](https://linkedin.com/in/zixia) \<zixia@zixia.net\>

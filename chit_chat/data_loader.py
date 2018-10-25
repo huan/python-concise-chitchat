@@ -10,7 +10,7 @@ from typing import (
 
 import numpy as np
 
-from config import (
+from .config import (
     GO,
     DONE,
 )
@@ -39,6 +39,7 @@ class DataLoader():
 
         self.queries, self.responses \
             = self.parse_raw_text(self.raw_text)
+        self.size = len(self.queries)
 
     def get_batch(
             self,

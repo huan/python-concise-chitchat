@@ -48,7 +48,7 @@ install:
 
 .PHONY: pytest
 pytest:
-	PYTHONPATH=chit-chat/ pytest chit-chat/ tests/
+	PYTHONPATH=. pytest chit-chat/ tests/
 
 .PHONY: test
 test: check-version pytest
@@ -59,12 +59,12 @@ check-version:
 
 code:
 	# vscode need to know where the modules are by setting PYTHONPATH
-	PYTHONPATH=chit-chat/ code .
+	PYTHONPATH=. code .
 
 .PHONY: train
 train:
-	PYTHONPATH=chit-chat/ python3 bin/train.py
+	PYTHONPATH=. python3 bin/train.py
 
 .PHONY: chitchat
 chitchat:
-	PYTHONPATH=chit-chat/ python3 chit-chat/chitchat.py
+	PYTHONPATH=. python3 chit-chat/chitchat.py
