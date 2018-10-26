@@ -13,6 +13,7 @@ import numpy as np
 from .config import (
     GO,
     DONE,
+    MAX_LENGTH,
 )
 
 DATASET_URL = 'https://github.com/zixia/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
@@ -33,13 +34,8 @@ class DataLoader():
         with gzip.open(dataset_file, 'rt') as f:
             self.raw_text = f.read().lower()
 
-        # line_list = self.raw_text_to_line_list(self.raw_text)
-
-        # XXX
-        # print('raw_text', raw_text.split('\n'))
-
         self.queries, self.responses \
-            = self.parse_raw_text(self.raw_text)
+            = self.__parse_raw_text(self.raw_text)
         self.size = len(self.queries)
 
     def get_batch(
@@ -57,7 +53,7 @@ class DataLoader():
 
         return batch_queries, batch_responses
 
-    def parse_raw_text(
+    def __parse_raw_text(
             self,
             raw_text: str
     ) -> Tuple[List[List[str]], List[List[str]]]:
@@ -67,7 +63,30 @@ class DataLoader():
 
         for line in raw_text.strip('\n').split('\n'):
             query, response = line.split('\t')
+            query, response = self.preprocess(query), self.preprocess(response)
             query_list.append('{} {} {}'.format(GO, query, DONE))
             response_list.append('{} {} {}'.format(GO, response, DONE))
 
         return np.array(query_list), np.array(response_list)
+
+    def preprocess(self, text: str) -> str:
+        """doc"""
+        new_text = text
+
+        new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)
+        new_text = re.sub(' +', ' ', new_text)
+        new_text = re.sub(
+            '([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?',
+            r'\1 \2 \3',
+            new_text,
+        )
+        if len(new_text.split()) > MAX_LENGTH:
+            new_text = (' ').join(new_text.split()[:MAX_LENGTH])
+            match = re.search('[.?!]', new_text)
+            if match is not None:
+                idx = match.start()
+                new_text = new_text[:idx+1]
+
+        new_text = new_text.strip().lower()
+
+        return new_text
