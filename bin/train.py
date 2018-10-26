@@ -22,11 +22,11 @@ def train() -> int:
     data_loader = DataLoader()
     vocabulary = Vocabulary(data_loader.raw_text)
 
-    print('Dataset size: {}, Vocabulari size: {}'.format(
+    print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
         vocabulary.size,
     ))
-    chitchat = ChitChat(tokenizer.word_index)
+    chitchat = ChitChat(vocabulary=vocabulary)
 
     checkpoint = tf.train.Checkpoint(model=chitchat)
     checkpoint.restore(tf.train.latest_checkpoint('./data/save'))

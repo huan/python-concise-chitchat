@@ -6,6 +6,8 @@ from typing import (
     Iterable,
 )
 
+import numpy as np
+
 import pytest                   # type: ignore
 # pylint: disable=W0621
 
@@ -42,12 +44,13 @@ def test_dataloader_batch_random(
 
     assert not_equal, 'should different between the batches'
 
+
 def test_dataloader_batch_type(
         loader: DataLoader,
 ) -> None:
     '''doc'''
     queries, _ = loader.get_batch()
     print(type(queries))
-    assert isinstance(queries, list), 'should get list for queries'
+    assert isinstance(queries, np.ndarray), 'should get ndarray for queries'
     assert isinstance(queries[0], str),\
         'should get str type for item from queries'

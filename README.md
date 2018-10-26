@@ -5,12 +5,17 @@
 ## Usage
 
 ```shell
-make download     # download dataset & pre-trained model parameters
 make install      # install python dependencies
-make dataset      # pre-process the dataset
-make train        # train the model
+make train        # train the model(dataset will be downloaded automatically)
 make tensorboard  # monitor & analyse train process
 make chat         # chat with it!
+```
+
+## DEVELOP
+
+```shell
+make download     # download original dataset
+make dataset      # generate the formated dataset
 ```
 
 ## SEE ALSO

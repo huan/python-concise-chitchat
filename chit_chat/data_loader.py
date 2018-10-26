@@ -2,12 +2,14 @@
 data loader
 '''
 import gzip
+import re
 from typing import (
     # Any,
     List,
     Tuple,
 )
 
+import tensorflow as tf
 import numpy as np
 
 from .config import (
@@ -17,18 +19,21 @@ from .config import (
 )
 
 DATASET_URL = 'https://github.com/zixia/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
-DATASET_FILE_NAME = 'concise-chit-chat-dataset.txt'
+DATASET_FILE_NAME = 'concise-chit-chat-dataset.txt.gz'
 
 
 class DataLoader():
     '''data loader'''
 
     def __init__(self) -> None:
-        # path = tf.keras.utils.get_file(DATASET_FILE_NAME, origin=DATASET_URL)
+        print('DataLoader', 'downloading dataset from:', DATASET_URL)
+        dataset_file = tf.keras.utils.get_file(
+            DATASET_FILE_NAME,
+            origin=DATASET_URL,
+        )
+        print('DataLoader', 'loading dataset from:', dataset_file)
 
-        # XXX
-        dataset_file = './data/dataset.txt.gz'
-        # print('path', path)
+        # dataset_file = './data/dataset.txt.gz'
 
         # with open(path, encoding='iso-8859-1') as f:
         with gzip.open(dataset_file, 'rt') as f:
@@ -70,7 +75,7 @@ class DataLoader():
         return np.array(query_list), np.array(response_list)
 
     def preprocess(self, text: str) -> str:
-        """doc"""
+        '''doc'''
         new_text = text
 
         new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)

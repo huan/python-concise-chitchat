@@ -4,10 +4,9 @@ import re
 import sys
 from typing import Tuple
 
-import pytest                   # type: ignore
-
 
 def version() -> Tuple[int, int, int]:
+    '''version'''
     try:
         ver = re.findall('^\d+\.\d+\.\d+', sys.version)[0]
         senior, minor, patch = re.findall('\d+', ver)
@@ -19,4 +18,5 @@ def version() -> Tuple[int, int, int]:
 # major, minor, patch = version()
 
 def version_test():
+    '''version test'''
     assert sys.version_info >= (3, 6), 'Python 3.6 or above is required.'
