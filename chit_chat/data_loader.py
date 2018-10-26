@@ -1,7 +1,7 @@
 '''
 data loader
 '''
-import re
+import gzip
 from typing import (
     # Any,
     List,
@@ -26,10 +26,11 @@ class DataLoader():
         # path = tf.keras.utils.get_file(DATASET_FILE_NAME, origin=DATASET_URL)
 
         # XXX
-        path = './data/dataset.txt'
+        dataset_file = './data/dataset.txt.gz'
         # print('path', path)
 
-        with open(path, encoding='iso-8859-1') as f:
+        # with open(path, encoding='iso-8859-1') as f:
+        with gzip.open(dataset_file, 'rt') as f:
             self.raw_text = f.read().lower()
 
         # line_list = self.raw_text_to_line_list(self.raw_text)

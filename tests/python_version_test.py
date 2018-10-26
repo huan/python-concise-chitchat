@@ -4,6 +4,8 @@ import re
 import sys
 from typing import Tuple
 
+import pytest                   # type: ignore
+
 
 def version() -> Tuple[int, int, int]:
     try:
@@ -16,8 +18,5 @@ def version() -> Tuple[int, int, int]:
 
 # major, minor, patch = version()
 
-
-if sys.version_info < (3, 6):
-    sys.exit('ERROR: Python 3.6 or above is required.')
-else:
-    print('Python %d.%d.%d passed checking.' % sys.version_info[:3])
+def version_test():
+    assert sys.version_info >= (3, 6), 'Python 3.6 or above is required.'

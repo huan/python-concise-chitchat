@@ -1,4 +1,5 @@
 """Pre-process"""
+import gzip
 import pickle
 import re
 import logging
@@ -18,7 +19,7 @@ LinesDict = Dict[int, str]
 
 MAX_LEN = 12
 # set to None to unlimit
-MAX_DATASET_SIZE = 128
+MAX_DATASET_SIZE = None
 
 # https://www.zhihu.com/question/20118544/answer/35639696
 # 英语为母语的4岁儿童词汇量已经有5000个，8岁词汇量为10000个。
@@ -149,7 +150,9 @@ logging.info('OOV filtered ...')
 question_list: List[str] = []
 answer_list: List[str] = []
 
-with open('data/dataset.txt', 'w') as f:
+DATASET_FILE = 'data/dataset.txt.gz'
+
+with gzip.open(DATASET_FILE, 'wt') as f:
     count = 0
     prev_id = 0
     for curr_id, curr_text in sorted(dialog_dict.items()):
@@ -165,4 +168,4 @@ with open('data/dataset.txt', 'w') as f:
             count = count + 1
         prev_id = curr_id
 
-logging.info('dataset generated. total %s pairs', count)
+logging.info('dataset generated: %s. total %s pairs', DATASET_FILE, count)

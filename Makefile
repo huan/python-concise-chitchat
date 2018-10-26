@@ -36,7 +36,7 @@ download:
 
 .PHONY: dataset
 dataset:
-	python3 ./scripts/generate-dataset.py
+	PYTHONPATH=. python3 ./bin/generate-dataset.py
 
 .PHONY: docker
 docker:
@@ -48,14 +48,10 @@ install:
 
 .PHONY: pytest
 pytest:
-	PYTHONPATH=. pytest chit-chat/ tests/
+	PYTHONPATH=. pytest chit_chat/ tests/
 
 .PHONY: test
-test: check-version pytest
-
-.PHONY: check-version
-check-version:
-	./scripts/check_version.py
+test: pytest
 
 code:
 	# vscode need to know where the modules are by setting PYTHONPATH
