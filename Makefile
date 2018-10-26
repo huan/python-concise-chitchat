@@ -65,6 +65,10 @@ code:
 train:
 	PYTHONPATH=. python3 bin/train.py
 
-.PHONY: chitchat
-chitchat:
-	PYTHONPATH=. python3 chit-chat/chitchat.py
+.PHONY: tensorboard
+tensorboard:
+	tensorboard --logdir=./data/tensorboard/
+
+.PHONY: chat
+chat:
+	PYTHONPATH=. python3 bin/chat.py

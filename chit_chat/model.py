@@ -2,9 +2,10 @@
 import tensorflow as tf
 import numpy as np
 from typing import (
-    Dict,
+    List,
 )
 
+from .vocabulary import Vocabulary
 from .config import (
     DONE,
     GO,
@@ -21,12 +22,12 @@ class ChitChat(tf.keras.Model):
     '''doc'''
     def __init__(
             self,
-            word_index: Dict[str, int],
+            vocabulary: Vocabulary,
     ) -> None:
         super().__init__()
 
-        self.word_index = word_index
-        self.vocabulary_size = len(word_index.keys()) + 1   # the additional 0
+        self.word_index = vocabulary.tokenizer.word_index
+        self.vocabulary_size = vocabulary.size
 
         # [batch_size, max_length] -> [batch_size, max_length, vocabulary_size]
         self.embedding = tf.keras.layers.Embedding(
@@ -108,42 +109,44 @@ class ChitChat(tf.keras.Model):
             queries: tf.Tensor,
     ) -> tf.Tensor:
         '''doc'''
-        # [batch_size, max_length]
+        pass
+    #     # [batch_size, max_length]
 
-        outputs = self.embedding(queries)
-        # [batch_size, max_length, vocabulary_size]
+    #     outputs = self.embedding(queries)
+    #     # [batch_size, max_length, vocabulary_size]
 
-        _, *states = self.lstm_encoder(outputs)
+    #     _, *states = self.lstm_encoder(outputs)
 
-        go_embedding = self.__indice_to_embedding(self.word_index[GO])
+    #     go_embedding = self.__indice_to_embedding(self.word_index[GO])
 
-        batch_size = tf.shape(queries)[0]
-        outputs = tf.zeros((
-            batch_size,         # batch_size
-            MAX_LENGTH,    # max time step
-        ))
+    #     batch_size = tf.shape(queries)[0]
+    #     outputs = tf.zeros((
+    #         batch_size,         # batch_size
+    #         MAX_LENGTH,    # max time step
+    #     ))
 
-        output = go_embedding
+    #     output = go_embedding
 
-        for t in range(MAX_LENGTH):
-            _, *states = self.lstm_decoder(
-                output,
-                initial_state=states,
-            )
-            output = self.dense(states[0])  # (hidden, cell)[0]
-            # [self.vocabulary_size]
+    #     for t in range(MAX_LENGTH):
+    #         _, *states = self.lstm_decoder(
+    #             output,
+    #             initial_state=states,
+    #         )
+    #         output = self.dense(states[0])  # (hidden, cell)[0]
+    #         # [self.vocabulary_size]
 
-            outputs[:, t] = output
-            if tf.argmax(output) == self.word_index[DONE]:
-                break
+    #         outputs[:, t] = output
+    #         if tf.argmax(output) == self.word_index[DONE]:
+    #             break
 
-        return outputs
+    #     return outputs
 
-    def predict(self, inputs: tf.Tensor, temperature=1.) -> tf.Tensor:
-        '''
-        inputs: queries [1, max_length]
-        outputs: responses [1, max_length]
-        '''
+    def predict(self, inputs: List[int], temperature=1.) -> List[int]:
+        '''doc'''
+
+        inputs = tf.convert_to_tensor(inputs)
+        inputs = tf.expand_dims(inputs, axis=0)
+
         outputs = self.embedding(inputs)
 
         _, *states = self.lstm_encoder(outputs)
@@ -153,7 +156,7 @@ class ChitChat(tf.keras.Model):
         outputs = np.zeros((MAX_LENGTH,))
         for t in range(MAX_LENGTH):
             output, *states = self.lstm_decoder(output, initial_state=states)
-            output = self.dense(states[0])
+            output = self.dense(output[-1])     # last output
 
             # align the embedding value
             indice = self.__logit_to_indice(output, temperature=temperature)
@@ -164,6 +167,8 @@ class ChitChat(tf.keras.Model):
             if indice == self.word_index[DONE]:
                 break
 
+        return outputs
+
     def __logit_to_indice(
             self,
             inputs,
@@ -173,13 +178,14 @@ class ChitChat(tf.keras.Model):
         [vocabulary_size]
         convert one hot encoding to indice with temperature
         '''
+        inputs = tf.squeeze(inputs)
         prob = tf.nn.softmax(inputs / temperature).numpy()
         indice = np.random.choice(self.vocabulary_size, p=prob)
         return indice
 
     def __indice_to_embedding(self, indice: int) -> tf.Tensor:
-        embedding = self.embedding([[indice]]).reshape(-1)
-        return embedding
+        tensor = tf.convert_to_tensor([[indice]])
+        return self.embedding(tensor)
 
 
 # def inference() -> None:
