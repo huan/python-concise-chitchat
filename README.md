@@ -7,7 +7,7 @@
 ```shell
 make download     # download dataset & pre-trained model parameters
 make install      # install python dependencies
-make preprocess   # pre-process the dataset
+make dataset      # pre-process the dataset
 make train        # train the model
 make tensorboard  # monitor & analyse train process
 make chat         # chat with it!
