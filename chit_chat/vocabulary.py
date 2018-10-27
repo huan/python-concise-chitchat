@@ -9,7 +9,7 @@ import tensorflow as tf
 from .config import (
     DONE,
     GO,
-    MAX_LENGTH,
+    MAX_LEN,
 )
 
 
@@ -31,7 +31,7 @@ class Vocabulary:
         sequence_list = self.tokenizer.texts_to_sequences(text_list)
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(
             sequence_list,
-            maxlen=MAX_LENGTH,
+            maxlen=MAX_LEN,
             padding='post',
             truncating='post',
         )
