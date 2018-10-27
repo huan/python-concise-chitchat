@@ -6,7 +6,7 @@ from .vocabulary import Vocabulary
 from .config import (
     DONE,
     GO,
-    MAX_LENGTH,
+    MAX_LEN,
 )
 
 name = 'chit-chat'

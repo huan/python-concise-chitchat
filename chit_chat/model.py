@@ -3,19 +3,88 @@ import tensorflow as tf
 import numpy as np
 from typing import (
     List,
+    Tuple,
 )
 
 from .vocabulary import Vocabulary
 from .config import (
     DONE,
     GO,
-    MAX_LENGTH,
+    MAX_LEN,
 )
 # from .data_loader import DataLoader
 # from .vocabulary import Vocabulary
 
-EMBEDDING_DIMENTION = 50
-LSTM_UNIT_NUM = 100
+EMBEDDING_DIM = 50
+LATENT_UNIT_NUM = 100
+
+
+class ChitEncoder(tf.keras.Model):
+    def __init__(
+            self,
+    ) -> None:
+        super().__init__()
+
+        self.lstm_encoder = tf.keras.layers.LSTM(
+            units=LATENT_UNIT_NUM,
+            return_state=True,
+        )
+
+    def call(
+            self,
+            inputs: tf.Tensor,  # shape: [batch_size, max_len, embedding_dim]
+            training=None,
+            mask=None,
+    ) -> tf.Tensor:
+        _, *state = self.lstm_encoder(inputs)
+        return state    # shape: ([latent_unit_num], [latent_unit_num])
+
+
+class ChatDecoder(tf.keras.Model):
+    def __init__(
+            self,
+            voc_size: int,
+    ) -> None:
+        super().__init__()
+
+        self.lstm_decoder = tf.keras.layers.LSTM(
+            units=LATENT_UNIT_NUM,
+            return_state=True,
+            return_sequences=True,
+            stateful=True,
+        )
+
+        self.dense = tf.keras.layers.Dense(
+            units=voc_size,
+        )
+
+        self.time_distributed_dense = tf.keras.layers.TimeDistributed(
+            self.dense
+        )
+
+    def set_states(self, states=None):
+        self.lstm_decoder.reset_states(states=states)
+
+    def call(
+            self,
+            inputs: tf.Tensor,  # shape: [batch_size, None, embedding_dim]
+            training=False,
+            mask=None,
+    ) -> tf.Tensor:
+        '''chat decoder call'''
+
+        batch_size, length, *_ = tf.shape(inputs)
+
+        outputs = tf.zeros(shape=(
+            batch_size,             # batch_size
+            length,        # max time step
+            LATENT_UNIT_NUM,          # dimention of hidden state
+        )).numpy()
+
+        outputs = self.lstm_decoder(inputs)
+
+        outputs = self.time_distributed_dense(outputs)
+        return outputs
 
 
 class ChitChat(tf.keras.Model):
@@ -32,15 +101,15 @@ class ChitChat(tf.keras.Model):
         # [batch_size, max_length] -> [batch_size, max_length, vocabulary_size]
         self.embedding = tf.keras.layers.Embedding(
             input_dim=self.vocabulary_size,
-            output_dim=EMBEDDING_DIMENTION,
+            output_dim=EMBEDDING_DIM,
             mask_zero=True,
         )
         self.lstm_encoder = tf.keras.layers.LSTM(
-            units=LSTM_UNIT_NUM,
+            units=LATENT_UNIT_NUM,
             return_state=True,
         )
         self.lstm_decoder = tf.keras.layers.LSTM(
-            units=LSTM_UNIT_NUM,
+            units=LATENT_UNIT_NUM,
             return_state=True,
             return_sequences=True,
         )
@@ -86,11 +155,11 @@ class ChitChat(tf.keras.Model):
         batch_size = tf.shape(queries)[0]
         outputs = tf.zeros(shape=(
             batch_size,             # batch_size
-            MAX_LENGTH,        # max time step
-            LSTM_UNIT_NUM,          # dimention of hidden state
+            MAX_LEN,        # max time step
+            LATENT_UNIT_NUM,          # dimention of hidden state
         )).numpy()
 
-        for t in range(MAX_LENGTH):
+        for t in range(MAX_LEN):
             _, *state = self.lstm_decoder(
                 tf.expand_dims(
                     teacher_forcing_embedding[:, t, :],
@@ -153,8 +222,8 @@ class ChitChat(tf.keras.Model):
 
         output = self.__indice_to_embedding(self.word_index[GO])
 
-        outputs = np.zeros((MAX_LENGTH,))
-        for t in range(MAX_LENGTH):
+        outputs = np.zeros((MAX_LEN,))
+        for t in range(MAX_LEN):
             output, *states = self.lstm_decoder(output, initial_state=states)
             output = self.dense(output[-1])     # last output
 
@@ -186,20 +255,3 @@ class ChitChat(tf.keras.Model):
     def __indice_to_embedding(self, indice: int) -> tf.Tensor:
         tensor = tf.convert_to_tensor([[indice]])
         return self.embedding(tensor)
-
-
-# def inference() -> None:
-#     '''inference'''
-#     X_, _ = data_loader.get_batch(seq_length, 1)
-#     for diversity in [0.2, 0.5, 1.0, 1.2]:
-#         X = X_
-#         print("diversity %f:" % diversity)
-#         for t in range(400):
-#             y_pred = chitchat.predict(X, diversity)
-#             print(data_loader.indices_char[y_pred[0]], end='', flush=True)
-#             X = np.concatenate(
-#                 [X[:, 1:],
-#                 np.expand_dims(y_pred, axis=1)],
-#                 axis=-1
-#             )
-#     return

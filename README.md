@@ -2,7 +2,9 @@
 
 [![Colab Notebook](https://img.shields.io/badge/Google_Colab-Notebook-brightgreen.svg)](https://colab.research.google.com/drive/1_TBoCV105ik8gmzbRTqoxIFajiGxCLfm)
 
-## Usage
+Book Chapter: Concise Chit Chat - <https://zixia.github.io/concise-chit-chat/>
+
+## USAGE
 
 ```shell
 make install      # install python dependencies

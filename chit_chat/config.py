@@ -6,4 +6,4 @@ GO = '\b'
 DONE = '\a'
 
 # max words per sentence
-MAX_LENGTH = 20
+MAX_LEN = 20

@@ -15,7 +15,7 @@ import numpy as np
 from .config import (
     GO,
     DONE,
-    MAX_LENGTH,
+    MAX_LEN,
 )
 
 DATASET_URL = 'https://github.com/zixia/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
@@ -85,8 +85,8 @@ class DataLoader():
             r'\1 \2 \3',
             new_text,
         )
-        if len(new_text.split()) > MAX_LENGTH:
-            new_text = (' ').join(new_text.split()[:MAX_LENGTH])
+        if len(new_text.split()) > MAX_LEN:
+            new_text = (' ').join(new_text.split()[:MAX_LEN])
             match = re.search('[.?!]', new_text)
             if match is not None:
                 idx = match.start()
