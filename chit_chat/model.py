@@ -11,11 +11,9 @@ from .config import (
     GO,
     MAX_LENGTH,
 )
-# from .data_loader import DataLoader
-# from .vocabulary import Vocabulary
 
-EMBEDDING_DIMENTION = 50
-LSTM_UNIT_NUM = 100
+EMBEDDING_DIMENTION = 100
+LSTM_UNIT_NUM = 300
 
 
 class ChitChat(tf.keras.Model):
@@ -35,14 +33,18 @@ class ChitChat(tf.keras.Model):
             output_dim=EMBEDDING_DIMENTION,
             mask_zero=True,
         )
-        self.lstm_encoder = tf.keras.layers.LSTM(
+        self.lstm_encoder = tf.keras.layers.Bidirectional(
+          tf.keras.layers.LSTM(
             units=LSTM_UNIT_NUM,
             return_state=True,
+          )
         )
-        self.lstm_decoder = tf.keras.layers.LSTM(
+        self.lstm_decoder = tf.keras.layers.Bidirectional(
+          tf.keras.layers.LSTM(
             units=LSTM_UNIT_NUM,
             return_state=True,
             return_sequences=True,
+          )
         )
 
         self.dense = tf.keras.layers.Dense(
@@ -89,6 +91,8 @@ class ChitChat(tf.keras.Model):
             MAX_LENGTH,        # max time step
             LSTM_UNIT_NUM,          # dimention of hidden state
         )).numpy()
+
+        import pdb; pdb.set_trace()
 
         for t in range(MAX_LENGTH):
             _, *state = self.lstm_decoder(
@@ -186,20 +190,3 @@ class ChitChat(tf.keras.Model):
     def __indice_to_embedding(self, indice: int) -> tf.Tensor:
         tensor = tf.convert_to_tensor([[indice]])
         return self.embedding(tensor)
-
-
-# def inference() -> None:
-#     '''inference'''
-#     X_, _ = data_loader.get_batch(seq_length, 1)
-#     for diversity in [0.2, 0.5, 1.0, 1.2]:
-#         X = X_
-#         print("diversity %f:" % diversity)
-#         for t in range(400):
-#             y_pred = chitchat.predict(X, diversity)
-#             print(data_loader.indices_char[y_pred[0]], end='', flush=True)
-#             X = np.concatenate(
-#                 [X[:, 1:],
-#                 np.expand_dims(y_pred, axis=1)],
-#                 axis=-1
-#             )
-#     return

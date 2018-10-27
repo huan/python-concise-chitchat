@@ -18,9 +18,13 @@ make download     # download original dataset
 make dataset      # generate the formated dataset
 ```
 
-## SEE ALSO
+## TURORIAL
 
 - [简单粗暴TensorFlow | A Concise Handbook of TensorFlow](https://tf.wiki)
+- [Quick guide to run TensorBoard in Google Colab](https://www.dlology.com/blog/quick-guide-to-run-tensorboard-in-google-colab/)
+
+## SEE ALSO
+
 - [Understand the Difference Between Return Sequences and Return States for LSTMs in Keras](https://machinelearningmastery.com/return-sequences-and-return-states-for-lstms-in-keras/)
 - [Practical Guide of RNN in Tensorflow and Keras Introduction](https://paulx-cn.github.io/blog/4th_Blog/)
 - [Sequence Tagging with Tensorflow](https://guillaumegenthial.github.io/sequence-tagging-with-tensorflow.html)

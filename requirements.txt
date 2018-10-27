@@ -1,4 +1,2 @@
-embeddings
-chakin
 tensorflow
 pyfunctional

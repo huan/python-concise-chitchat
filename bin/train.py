@@ -9,12 +9,9 @@ from chit_chat import (
 
 tf.enable_eager_execution()
 
-tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
-
 
 def train() -> int:
     '''doc'''
-    ####################
     learning_rate = 1e-3
     num_batches = 8000
     batch_size = 256

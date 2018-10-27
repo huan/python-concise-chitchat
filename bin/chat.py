@@ -60,7 +60,7 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
             print('Bot:', ' '.join(response_word_list))
 
         except KeyError:
-            print("Error: Encountered unknown word.")
+            print("OOV: Please use simple words with the ChitChat Bot!")
 
 
 main()
