@@ -9,6 +9,39 @@ from chit_chat import (
 
 tf.enable_eager_execution()
 
+data_loader = DataLoader()
+vocabulary = Vocabulary(data_loader.raw_text)
+chitchat = ChitChat(vocabulary=vocabulary)
+
+
+def loss(model, x, y) -> tf.Tensor:
+    weights = tf.cast(
+        tf.not_equal(y, 0),
+        tf.float32,
+    )
+
+    prediction = model(
+        inputs=x,
+        teacher_forcing_targets=y,
+        training=True,
+    )
+
+    # implment the following contrib function in a loop ?
+    # https://stackoverflow.com/a/41135778/1123955
+    # https://stackoverflow.com/q/48025004/1123955
+    return tf.contrib.seq2seq.sequence_loss(
+        prediction,
+        y,
+        weights,
+    )
+
+
+def grad(model, inputs, targets):
+    with tf.GradientTape() as tape:
+        loss_value = loss(model, inputs, targets)
+
+    return tape.gradient(loss_value, model.variables)
+
 
 def train() -> int:
     '''doc'''
@@ -16,75 +49,52 @@ def train() -> int:
     num_batches = 8000
     batch_size = 256
 
-    data_loader = DataLoader()
-    vocabulary = Vocabulary(data_loader.raw_text)
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
         vocabulary.size,
     ))
-    chitchat = ChitChat(vocabulary=vocabulary)
-
-    checkpoint = tf.train.Checkpoint(model=chitchat)
-    checkpoint.restore(tf.train.latest_checkpoint('./data/save'))
-    print('checkpoint restored.')
-
-    summary_writer = tf.contrib.summary.create_file_writer('./data/tensorboard')
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
-    with summary_writer.as_default(), tf.contrib.summary.always_record_summaries():
+    root = tf.train.Checkpoint(
+        optimizer=optimizer,
+        model=chitchat,
+        optimizer_step=tf.train.get_or_create_global_step(),
+    )
 
-        for batch_index in range(num_batches):
-            queries, responses = data_loader.get_batch(batch_size)
+    root.restore(tf.train.latest_checkpoint('./data/save'))
+    print('checkpoint restored.')
 
-            encoder_input = vocabulary.texts_to_padded_sequences(queries)
+    writer = tf.contrib.summary.create_file_writer('./data/tensorboard')
+    writer.set_as_default()
 
-            decoder_input = vocabulary.texts_to_padded_sequences(responses)
+    global_step = tf.train.get_or_create_global_step()
 
-            decoder_target = tf.concat(
-                (
-                    decoder_input[:, 1:],   # get rid of the start GO
-                    tf.zeros((batch_size, 1), dtype=tf.int32),
-                ),
-                axis=-1,
-            )
+    for batch_index in range(num_batches):
+        global_step.assign_add(1)
 
-            weights = tf.cast(
-                tf.not_equal(decoder_target, 0),
-                tf.float32,
-            )
+        queries, responses = data_loader.get_batch(batch_size)
 
-            # import pdb; pdb.set_trace()
+        encoder_inputs = vocabulary.texts_to_padded_sequences(queries)
+        decoder_outputs = vocabulary.texts_to_padded_sequences(responses)
 
-            with tf.GradientTape() as tape:
-                sequence_logit_pred = chitchat(
-                    inputs=encoder_input,
-                    teacher_forcing_inputs=decoder_input,
-                    training=True,
-                )
+        grads = grad(chitchat, encoder_inputs, decoder_outputs)
 
-                # implment the following contrib function in a loop ?
-                # https://stackoverflow.com/a/41135778/1123955
-                # https://stackoverflow.com/q/48025004/1123955
-                loss = tf.contrib.seq2seq.sequence_loss(
-                    sequence_logit_pred,
-                    decoder_target,
-                    weights,
-                )
+        optimizer.apply_gradients(
+            grads_and_vars=zip(grads, chitchat.variables)
+        )
 
-            tf.contrib.summary.scalar("loss", loss, step=batch_index)
+        if batch_index % 10 == 0:
+            print("batch %d: loss %f" % (batch_index, loss(
+                chitchat, encoder_inputs, decoder_outputs).numpy()))
+            root.save('./data/save/model.ckpt')
+            print('checkpoint saved.')
 
-            grads = tape.gradient(loss, chitchat.variables)
-            optimizer.apply_gradients(
-                grads_and_vars=zip(grads, chitchat.variables)
-            )
-
-            print("batch %d: loss %f" % (batch_index, loss.numpy()))
-
-            if batch_index % 100 == 0:
-                checkpoint.save('./data/save/model.ckpt')
-                print('checkpoint saved.')
+        with tf.contrib.summary.record_summaries_every_n_global_steps(100):
+            # your model code goes here
+            tf.contrib.summary.scalar('loss', loss(
+                chitchat, encoder_inputs, decoder_outputs).numpy())
 
     return 0
 
