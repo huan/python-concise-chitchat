@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 from typing import (
     List,
-    Tuple,
+    # Tuple,
 )
 
 from .vocabulary import Vocabulary
@@ -47,7 +47,6 @@ class ChatDecoder(tf.keras.Model):
 
         self.lstm_decoder = tf.keras.layers.LSTM(
             units=LATENT_UNIT_NUM,
-            return_state=True,
             return_sequences=True,
             stateful=True,
         )
@@ -60,7 +59,7 @@ class ChatDecoder(tf.keras.Model):
             self.dense
         )
 
-    def set_states(self, states=None):
+    def set_state(self, states=None):
         self.lstm_decoder.reset_states(states=states)
 
     def call(
@@ -71,21 +70,150 @@ class ChatDecoder(tf.keras.Model):
     ) -> tf.Tensor:
         '''chat decoder call'''
 
-        batch_size, length, *_ = tf.shape(inputs)
+        batch_size = tf.shape(inputs)[0]
+        max_len = tf.shape(inputs)[0]
 
         outputs = tf.zeros(shape=(
-            batch_size,             # batch_size
-            length,        # max time step
-            LATENT_UNIT_NUM,          # dimention of hidden state
+            batch_size,         # batch_size
+            max_len,            # max time step
+            LATENT_UNIT_NUM,    # dimention of hidden state
         )).numpy()
 
         outputs = self.lstm_decoder(inputs)
-
         outputs = self.time_distributed_dense(outputs)
         return outputs
 
 
 class ChitChat(tf.keras.Model):
+    '''doc'''
+    def __init__(
+            self,
+            vocabulary: Vocabulary,
+    ) -> None:
+        super().__init__()
+
+        self.word_index = vocabulary.tokenizer.word_index
+        self.voc_size = vocabulary.size
+
+        # [batch_size, max_len] -> [batch_size, max_len, voc_size]
+        self.embedding = tf.keras.layers.Embedding(
+            input_dim=self.voc_size,
+            output_dim=EMBEDDING_DIM,
+            mask_zero=True,
+        )
+
+        self.encoder = ChitEncoder()
+        # shape: [batch_size, state]
+
+        self.decoder = ChatDecoder(self.voc_size)
+        # shape: [batch_size, max_len, voc_size]
+
+    def call(
+            self,
+            inputs: tf.Tensor,  # shape: [batch_size, max_len]
+            training=None,
+            mask=None,
+    ) -> tf.Tensor:     # shape: [batch_size, max_len, embedding_dim]
+        '''call'''
+        batch_size = tf.shape(inputs)[0]
+
+        outputs = tf.zeros(shape=(
+            batch_size,             # batch_size
+            MAX_LEN,        # max time step
+            LATENT_UNIT_NUM,          # dimention of hidden state
+        )).numpy()
+
+        inputs_embedding = self.embedding(tf.convert_to_tensor(inputs))
+        state = self.encoder(inputs_embedding)
+        self.decoder.set_state(state)
+
+        output = [self.embedding(GO).numpy().tolist()] * batch_size
+
+        for t in range(MAX_LEN):
+            output = self.decoder(output)
+            # import pdb; pdb.set_trace()
+            outputs[:, t, :] = tf.squeeze(output)
+
+        return outputs
+
+    def teacher_forcing(
+            self,
+            inputs: tf.Tensor,  # shape: [batch_size, max_len]
+            teacher_forcing_inputs: tf.Tensor,  # shape: [batch_size, max_len]
+    ) -> tf.Tensor:
+        '''with teacher forcing'''
+        batch_size = tf.shape(inputs)[0]
+
+        outputs = tf.zeros(shape=(
+            batch_size,             # batch_size
+            MAX_LEN,        # max time step
+            LATENT_UNIT_NUM,          # dimention of hidden state
+        )).numpy()
+
+        inputs_embedding = self.embedding(tf.convert_to_tensor(inputs))
+        state = self.encoder(inputs_embedding)
+        self.decoder.set_state(state)
+
+        teacher_forcing_embedding = self.embedding(
+            tf.convert_to_tensor(teacher_forcing_inputs)
+        )
+
+        for t in range(MAX_LEN):
+            target = teacher_forcing_embedding[:, t, :].reshape(batch_size, -1, EMBEDDING_DIM)
+            output = self.decoder(target)
+            # import pdb; pdb.set_trace()
+            outputs[:, t, :] = tf.squeeze(output)
+
+        return outputs
+
+    def predict(self, inputs: List[int], temperature=1.) -> List[int]:
+        '''doc'''
+
+        inputs = tf.convert_to_tensor(inputs)
+        inputs = tf.expand_dims(inputs, axis=0)
+
+        outputs = self.embedding(inputs)
+
+        _, *states = self.lstm_encoder(outputs)
+
+        output = self.__indice_to_embedding(self.word_index[GO])
+
+        outputs = np.zeros((MAX_LEN,))
+        for t in range(MAX_LEN):
+            output, *states = self.lstm_decoder(output, initial_state=states)
+            output = self.dense(output[-1])     # last output
+
+            # align the embedding value
+            indice = self.__logit_to_indice(output, temperature=temperature)
+            output = self.__indice_to_embedding(indice)
+
+            outputs[t] = indice
+
+            if indice == self.word_index[DONE]:
+                break
+
+        return outputs
+
+    def __logit_to_indice(
+            self,
+            inputs,
+            temperature=1.,
+    ) -> int:
+        '''
+        [vocabulary_size]
+        convert one hot encoding to indice with temperature
+        '''
+        inputs = tf.squeeze(inputs)
+        prob = tf.nn.softmax(inputs / temperature).numpy()
+        indice = np.random.choice(self.vocabulary_size, p=prob)
+        return indice
+
+    def __indice_to_embedding(self, indice: int) -> tf.Tensor:
+        tensor = tf.convert_to_tensor([[indice]])
+        return self.embedding(tensor)
+
+
+class ChitChatOld(tf.keras.Model):
     '''doc'''
     def __init__(
             self,
@@ -104,13 +232,13 @@ class ChitChat(tf.keras.Model):
         )
         self.lstm_encoder = tf.keras.layers.Bidirectional(
           tf.keras.layers.LSTM(
-            units=LSTM_UNIT_NUM,
+            units=LATENT_UNIT_NUM,
             return_state=True,
           )
         )
         self.lstm_decoder = tf.keras.layers.Bidirectional(
           tf.keras.layers.LSTM(
-            units=LSTM_UNIT_NUM,
+            units=LATENT_UNIT_NUM,
             return_state=True,
             return_sequences=True,
           )
