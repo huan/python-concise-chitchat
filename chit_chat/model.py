@@ -48,7 +48,7 @@ class ChatDecoder(tf.keras.Model):
         self.lstm_decoder = tf.keras.layers.LSTM(
             units=LATENT_UNIT_NUM,
             return_sequences=True,
-            stateful=True,
+            return_state=True,
         )
 
         self.dense = tf.keras.layers.Dense(
@@ -59,9 +59,11 @@ class ChatDecoder(tf.keras.Model):
             self.dense
         )
 
-    def set_states(self, states=None):
+        self.initial_state = None
+
+    def set_state(self, state=None):
         # import pdb; pdb.set_trace()
-        self.lstm_decoder.states = states
+        self.initial_state = state
 
     def call(
             self,
@@ -81,7 +83,9 @@ class ChatDecoder(tf.keras.Model):
         # ))
 
         import pdb; pdb.set_trace()
-        outputs = self.lstm_decoder(inputs)
+        outputs, *states = self.lstm_decoder(inputs, initial_state=self.initial_state)
+        self.initial_state = states
+
         outputs = self.time_distributed_dense(outputs)
         return outputs
 
@@ -121,32 +125,31 @@ class ChitChat(tf.keras.Model):
         batch_size = tf.shape(inputs)[0]
 
         inputs_embedding = self.embedding(tf.convert_to_tensor(inputs))
-        states = self.encoder(inputs_embedding)
+        state = self.encoder(inputs_embedding)
 
-        self.decoder.set_states(states)
+        self.decoder.set_state(state)
 
         # numpy.ndarray or tf.Tensor ???
-        outputs = tf.Variable(
-            tf.zeros(shape=(
-                batch_size,             # batch_size
-                MAX_LEN,        # max time step
-                LATENT_UNIT_NUM,          # dimention of hidden state
-            )),
-            dtype=tf.float32,
-        )
+        # outputs = tf.Variable(
+        #     tf.zeros(shape=(
+        #         batch_size,             # batch_size
+        #         MAX_LEN,        # max time step
+        #         LATENT_UNIT_NUM,          # dimention of hidden state
+        #     )),
+        #     dtype=tf.float32,
+        # )
         if training:
             teacher_forcing_targets = tf.convert_to_tensor(teacher_forcing_targets)
             teacher_forcing_embeddings = self.embedding(teacher_forcing_targets)
 
         # outputs[:, 0, :].assign([self.__go_embedding()] * batch_size)
-        outputs = tf.ones([batch_size, 1]) * [self.__go_embedding()]
-        output = self.decoder(self.__go_embedding())
+        batch_go_embedding = tf.ones([batch_size, 1, 1]) * [self.__go_embedding()]
+        outputs = batch_go_embedding
+        output = self.decoder(batch_go_embedding)
 
         for t in range(1, MAX_LEN):
             # outputs[:, t, :] = output
-            outputs = tf.concat(
-                1, [outputs, output]
-            )
+            outputs = tf.concat([outputs, output], 1)
             if training:
                 target = teacher_forcing_embeddings[:, t, :]
                 # target = tf.expand_dims(target, axis=1)
@@ -165,8 +168,8 @@ class ChitChat(tf.keras.Model):
         embeddings = self.embedding(inputs)
         # shape: [1, len(inputs), embedding_dim]
 
-        states = self.encoder(embeddings)
-        self.decoder.set_states(states)
+        state = self.encoder(embeddings)
+        self.decoder.set_states(state)
 
         outputs = np.zeros((MAX_LEN,))
         outputs[0] = self.word_index[GO]
