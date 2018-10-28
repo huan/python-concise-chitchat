@@ -15,6 +15,7 @@ chitchat = ChitChat(vocabulary=vocabulary)
 
 
 def loss(model, x, y) -> tf.Tensor:
+    '''doc'''
     weights = tf.cast(
         tf.not_equal(y, 0),
         tf.float32,
@@ -31,12 +32,13 @@ def loss(model, x, y) -> tf.Tensor:
     # https://stackoverflow.com/q/48025004/1123955
     return tf.contrib.seq2seq.sequence_loss(
         prediction,
-        y,
+        tf.convert_to_tensor(y),
         weights,
     )
 
 
 def grad(model, inputs, targets):
+    '''doc'''
     with tf.GradientTape() as tape:
         loss_value = loss(model, inputs, targets)
 
@@ -47,8 +49,7 @@ def train() -> int:
     '''doc'''
     learning_rate = 1e-3
     num_batches = 8000
-    batch_size = 256
-
+    batch_size = 128
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -91,10 +92,11 @@ def train() -> int:
             root.save('./data/save/model.ckpt')
             print('checkpoint saved.')
 
-        with tf.contrib.summary.record_summaries_every_n_global_steps(100):
+        with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             # your model code goes here
             tf.contrib.summary.scalar('loss', loss(
                 chitchat, encoder_inputs, decoder_outputs).numpy())
+            print('summary had been written.')
 
     return 0
 

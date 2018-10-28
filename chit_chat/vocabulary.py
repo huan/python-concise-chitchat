@@ -26,7 +26,10 @@ class Vocabulary:
         # additional 1 for the index 0
         self.size = 1 + len(self.tokenizer.word_index.keys())
 
-    def texts_to_padded_sequences(self, text_list: List[str]) -> tf.Tensor:
+    def texts_to_padded_sequences(
+            self,
+            text_list: List[List[str]]
+    ) -> tf.Tensor:
         '''doc'''
         sequence_list = self.tokenizer.texts_to_sequences(text_list)
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(

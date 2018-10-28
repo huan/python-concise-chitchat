@@ -18,6 +18,7 @@ LATENT_UNIT_NUM = 300
 
 
 class ChitEncoder(tf.keras.Model):
+    '''encoder'''
     def __init__(
             self,
     ) -> None:
@@ -39,6 +40,7 @@ class ChitEncoder(tf.keras.Model):
 
 
 class ChatDecoder(tf.keras.Model):
+    '''decoder'''
     def __init__(
             self,
             voc_size: int,
@@ -62,6 +64,7 @@ class ChatDecoder(tf.keras.Model):
         self.initial_state = None
 
     def set_state(self, state=None):
+        '''doc'''
         # import pdb; pdb.set_trace()
         self.initial_state = state
 
@@ -73,8 +76,8 @@ class ChatDecoder(tf.keras.Model):
     ) -> tf.Tensor:
         '''chat decoder call'''
 
-        batch_size = tf.shape(inputs)[0]
-        max_len = tf.shape(inputs)[0]
+        # batch_size = tf.shape(inputs)[0]
+        # max_len = tf.shape(inputs)[0]
 
         # outputs = tf.zeros(shape=(
         #     batch_size,         # batch_size
@@ -82,7 +85,7 @@ class ChatDecoder(tf.keras.Model):
         #     LATENT_UNIT_NUM,    # dimention of hidden state
         # ))
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         outputs, *states = self.lstm_decoder(inputs, initial_state=self.initial_state)
         self.initial_state = states
 
@@ -99,6 +102,7 @@ class ChitChat(tf.keras.Model):
         super().__init__()
 
         self.word_index = vocabulary.tokenizer.word_index
+        self.index_word = vocabulary.tokenizer.index_word
         self.voc_size = vocabulary.size
 
         # [batch_size, max_len] -> [batch_size, max_len, voc_size]
@@ -116,8 +120,8 @@ class ChitChat(tf.keras.Model):
 
     def call(
             self,
-            inputs: tf.Tensor,  # shape: [batch_size, max_len]
-            teacher_forcing_targets: tf.Tensor=None,  # shape: [batch_size, max_len]
+            inputs: List[List[int]],  # shape: [batch_size, max_len]
+            teacher_forcing_targets: List[List[int]]=None,  # shape: [batch_size, max_len]
             training=None,
             mask=None,
     ) -> tf.Tensor:     # shape: [batch_size, max_len, embedding_dim]
@@ -129,63 +133,49 @@ class ChitChat(tf.keras.Model):
 
         self.decoder.set_state(state)
 
-        # numpy.ndarray or tf.Tensor ???
-        # outputs = tf.Variable(
-        #     tf.zeros(shape=(
-        #         batch_size,             # batch_size
-        #         MAX_LEN,        # max time step
-        #         LATENT_UNIT_NUM,          # dimention of hidden state
-        #     )),
-        #     dtype=tf.float32,
-        # )
         if training:
             teacher_forcing_targets = tf.convert_to_tensor(teacher_forcing_targets)
             teacher_forcing_embeddings = self.embedding(teacher_forcing_targets)
 
         # outputs[:, 0, :].assign([self.__go_embedding()] * batch_size)
         batch_go_embedding = tf.ones([batch_size, 1, 1]) * [self.__go_embedding()]
-        outputs = batch_go_embedding
+        batch_go_one_hot = tf.ones([batch_size, 1, 1]) * [tf.one_hot(self.word_index[GO], self.voc_size)]
+
+        outputs = batch_go_one_hot
         output = self.decoder(batch_go_embedding)
 
         for t in range(1, MAX_LEN):
-            # outputs[:, t, :] = output
             outputs = tf.concat([outputs, output], 1)
             if training:
                 target = teacher_forcing_embeddings[:, t, :]
-                # target = tf.expand_dims(target, axis=1)
-                output = target
+                decoder_input = tf.expand_dims(target, axis=1)
+            else:
+                decoder_input = self.__indice_to_embedding(tf.argmax(output))
 
-            output = self.decoder(output)
+            output = self.decoder(decoder_input)
 
         return outputs
 
     def predict(self, inputs: List[int], temperature=1.) -> List[int]:
         '''doc'''
 
-        inputs = tf.convert_to_tensor(inputs)
-        inputs = tf.expand_dims(inputs, axis=0)     # shape: [1, len(inputs)]
+        outputs = self([inputs])
+        outputs = tf.squeeze(outputs)
 
-        embeddings = self.embedding(inputs)
-        # shape: [1, len(inputs), embedding_dim]
-
-        state = self.encoder(embeddings)
-        self.decoder.set_states(state)
-
-        outputs = np.zeros((MAX_LEN,))
-        outputs[0] = self.word_index[GO]
-
+        word_list = []
         for t in range(1, MAX_LEN):
-            output = self.decoder(outputs[t - 1])
+            output = outputs[t]
 
-            # align the embedding value
             indice = self.__logit_to_indice(output, temperature=temperature)
 
-            outputs[t] = indice
+            word = self.index_word[indice]
 
             if indice == self.word_index[DONE]:
                 break
 
-        return outputs
+            word_list.append(word)
+
+        return ' '.join(word_list)
 
     def __go_embedding(self) -> tf.Tensor:
         return self.embedding(
