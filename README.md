@@ -1,6 +1,6 @@
 # CONCISE CHIT CHAT
 
-[![Colab Notebook](https://img.shields.io/badge/Google_Colab-Notebook-brightgreen.svg)](https://colab.research.google.com/drive/1_TBoCV105ik8gmzbRTqoxIFajiGxCLfm)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zixia/concise-chit-chat/blob/master/Concise_Chit_Chat.ipynb)
 
 Book Chapter: Concise Chit Chat - <https://zixia.github.io/concise-chit-chat/>
 
