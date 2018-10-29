@@ -288,7 +288,7 @@ while True:
         print("OOV: Please use simple words with the ChitChat Bot!")
 ```
 
-生成的对话如下::
+生成的对话如下：
 
 ```shell
 > hi
