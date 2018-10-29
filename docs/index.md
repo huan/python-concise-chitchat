@@ -63,8 +63,8 @@ class DataLoader():
         text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', text)
         text = re.sub(' +', ' ', text)
         text = re.sub('([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?', r'\1 \2 \3', text)
-        if len(text.split()) > MAX_LENGTH:
-            text = (' ').join(text.split()[:MAX_LENGTH])
+        if len(text.split()) > MAX_LEN:
+            text = (' ').join(text.split()[:MAX_LEN])
             match = re.search('[.?!]', text)
             if match is not None:
                 idx = match.start()
@@ -88,7 +88,7 @@ class DataLoader():
 3. 建立单词到编码数字，以及编码数字到单词的映射字典；
 4. 负责将文本句子转化为填充后的编码序列，形状为[batch_size, max_length]；
 
-```python
+```py
 class Vocabulary:
     def __init__(self, text):
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
@@ -98,11 +98,27 @@ class Vocabulary:
     def texts_to_padded_sequences(self, text_list):
         sequence_list = self.tokenizer.texts_to_sequences(text_list)
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(
-            sequence_list, maxlen=MAX_LENGTH, padding='post', truncating='post')
+            sequence_list, maxlen=MAX_LEN, padding='post', truncating='post')
         return padded_sequences
 ```
 
-接下来进行模型的实现。在 ``__init__`` 方法中我们实例化一个常用的 ``BasicLSTMCell`` 单元，以及一个线性变换用的全连接层，我们首先对序列进行One Hot操作，即将编码i变换为一个n维向量，其第i位为1，其余均为0。这里n为字符种类数num_char。变换后的序列张量形状为[num_batch, seq_length, num_chars]。接下来，我们将序列从头到尾依序送入RNN单元，即将当前时间t的RNN单元状态 ``state`` 和t时刻的序列 ``inputs[:, t, :]`` 送入RNN单元，得到当前时间的输出 ``output`` 和下一个时间t+1的RNN单元状态。取RNN单元最后一次的输出，通过全连接层变换到num_chars维，即作为模型的输出。
+接下来进行模型的实现。我们建立一个ChitChat模型，接受的输入是
+
+在 ``__init__`` 方法中我们实例化一个常用的 ``BasicLSTMCell`` 单元，以及一个线性变换用的全连接层，我们首先对序列进行One Hot操作，即将编码i变换为一个n维向量，其第i位为1，其余均为0。这里n为字符种类数num_char。变换后的序列张量形状为[num_batch, seq_length, num_chars]。接下来，我们将序列从头到尾依序送入RNN单元，即将当前时间t的RNN单元状态 ``state`` 和t时刻的序列 ``inputs[:, t, :]`` 送入RNN单元，得到当前时间的输出 ``output`` 和下一个时间t+1的RNN单元状态。取RNN单元最后一次的输出，通过全连接层变换到num_chars维，即作为模型的输出。
+
+```py
+class ChitEncoder(tf.keras.Model):
+    def __init__(self):
+        super().__init__()
+        self.lstm_encoder = tf.keras.layers.LSTM(
+          units=LATENT_UNIT_NUM, return_state=True)
+
+    def call(self, inputs, training=None, mask=None):
+        _, *state = self.lstm_encoder(inputs)
+        return state
+```
+
+
 
 .. figure:: ../_static/image/model/rnn_single.jpg
     :width: 30%
