@@ -61,9 +61,9 @@ code:
 train:
 	PYTHONPATH=. python3 bin/train.py
 
-.PHONY: tensorboard
-tensorboard:
-	tensorboard --logdir=./data/tensorboard/
+.PHONY: board
+board:
+	tensorboard --logdir=./data/board/
 
 .PHONY: chat
 chat:

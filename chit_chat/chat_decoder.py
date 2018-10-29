@@ -33,8 +33,6 @@ class ChatDecoder(tf.keras.Model):
 
         self.dense = tf.keras.layers.Dense(units=voc_size)
 
-        self.initial_state = None
-
     def call(
             self,
             inputs: Tuple[tf.Tensor, tf.Tensor],
@@ -42,38 +40,33 @@ class ChatDecoder(tf.keras.Model):
             training=False,
     ) -> tf.Tensor:
         '''chat decoder call'''
-        batch_size = tf.shape(inputs)[0]
+        batch_size = tf.shape(inputs[0])[0]
 
-        batch_go_embedding = tf.ones([batch_size, 1, 1]) \
-            * [self.__indice_to_embedding(self.indice_go)]
         batch_go_one_hot = tf.ones([batch_size, 1, 1]) \
             * [tf.one_hot(self.indice_go, self.voc_size)]
 
-        output, *states = self.lstm_decoder(
-            batch_go_embedding,
-            initial_state=inputs,
-        )
+        states = inputs
 
-        if training:
-            teacher_forcing_targets = tf.convert_to_tensor(teacher_forcing_targets)
-            teacher_forcing_embeddings = self.embedding(teacher_forcing_targets)
+        outputs = tf.zeros([batch_size, 0, self.voc_size])
+        output = batch_go_one_hot
 
-        outputs = batch_go_one_hot
-
-        for t in range(1, MAX_LEN):
-            outputs = tf.concat([outputs, self.dense(output)], 1)
+        t = 0
+        while t < MAX_LEN:
             if training:
-                target = teacher_forcing_embeddings[:, t, :]
-                decoder_input = tf.expand_dims(target, axis=1)
+                target_indice = teacher_forcing_targets[:, t]
             else:
-                indice = tf.argmax(tf.squeeze(output))
-                decoder_input = tf.ones([batch_size, 1, 1]) \
-                    * [self.__indice_to_embedding(indice)]
+                target_indice = tf.argmax(output, axis=-1)
 
-            output = self.lstm_decoder(decoder_input, initial_state=states)
+            decoder_inputs = tf.expand_dims(
+                self.embedding(tf.convert_to_tensor(target_indice)), axis=1)
+
+            output, *states = self.lstm_decoder(
+                inputs=decoder_inputs,
+                initial_state=states,
+            )
+            output = self.dense(output)
+            outputs = tf.concat([outputs, output], 1)
+
+            t = t + 1
 
         return outputs
-
-    def __indice_to_embedding(self, indice: int) -> tf.Tensor:
-        return self.embedding(
-            tf.convert_to_tensor(indice))

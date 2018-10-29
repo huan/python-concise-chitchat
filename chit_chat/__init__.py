@@ -1,5 +1,5 @@
 '''chit chat'''
-from .model import ChitChat
+from .chit_chat import ChitChat
 from .data_loader import DataLoader
 from .vocabulary import Vocabulary
 

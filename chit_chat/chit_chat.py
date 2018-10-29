@@ -11,6 +11,7 @@ from .chit_encoder import ChitEncoder
 from .chat_decoder import ChatDecoder
 from .config import (
     DONE,
+    EMBEDDING_DIM,
     GO,
     MAX_LEN,
 )
@@ -36,10 +37,14 @@ class ChitChat(tf.keras.Model):
             mask_zero=True,
         )
 
-        self.encoder = ChitEncoder()
+        self.encoder = ChitEncoder(embedding=self.embedding)
         # shape: [batch_size, state]
 
-        self.decoder = ChatDecoder(self.voc_size)
+        self.decoder = ChatDecoder(
+            embedding=self.embedding,
+            indice_go=self.word_index[GO],
+            voc_size=self.voc_size,
+        )
         # shape: [batch_size, max_len, voc_size]
 
     def call(
@@ -50,9 +55,9 @@ class ChitChat(tf.keras.Model):
             mask=None,
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
-        state = self.encoder(inputs)
+        context = self.encoder(inputs)
         return self.decoder(
-            state,
+            inputs=context,
             training=training,
             teacher_forcing_targets=teacher_forcing_targets,
         )

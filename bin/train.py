@@ -49,7 +49,7 @@ def train() -> int:
     '''doc'''
     learning_rate = 1e-3
     num_batches = 8000
-    batch_size = 128
+    batch_size = 32
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -67,7 +67,7 @@ def train() -> int:
     root.restore(tf.train.latest_checkpoint('./data/save'))
     print('checkpoint restored.')
 
-    writer = tf.contrib.summary.create_file_writer('./data/tensorboard')
+    writer = tf.contrib.summary.create_file_writer('./data/board')
     writer.set_as_default()
 
     global_step = tf.train.get_or_create_global_step()
