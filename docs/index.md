@@ -17,7 +17,7 @@
 How are you
 ```
 
-这个句子（序列）一共有3个单词。当我们听到这个由3个单词组成的句子后，根据我们的习惯，我们最倾向与回复的一句话是"Fine thank you"。我们希望建立这样的模型，输入num_batch个由编码后单词和字符组成的，长为max_length的序列，输入张量形状为[num_batch, max_length]，输出与这个序列对应的序列（如聊天回复、翻译等）中单词和字符的概率分布，概率分布的维度为单词和字符种类数voc_size，输出张量形状为[num_batch, max_length, voc_size]。
+这个句子（序列）一共有3个单词。当我们听到这个由3个单词组成的句子后，根据我们的习惯，我们最倾向与回复的一句话是"Fine thank you"。我们希望建立这样的模型，输入num_batch个由编码后单词和字符组成的，长为max_length的序列，输入张量形状为[num_batch, max_length]，输出与这个序列对应的序列（如聊天回复、翻译等）中单词和字符的概率分布，概率分布的维度为词汇表大小voc_size，输出张量形状为[num_batch, max_length, voc_size]。
 
 首先，还是实现一个简单的 ``DataLoader`` 类来读取文本，
 
@@ -110,7 +110,7 @@ class ChitChat(tf.keras.Model):
             teacher_forcing_targets=teacher_forcing_targets)
 ```
 
-ChitEncoder子模型输入num_batch个由编码后单词和字符组成的，长为max_length的序列，输入张量形状为[num_batch, max_length]，输出与这个序列对应的上下文张量。为了简化代码，我们这里只使用一个最基本的LSTM单元，没有使用效果可以更佳的双向RNN、注意力机制等方法。在 `__init__` 方法中我们实例化一个常用的 `LSTM` 单元，并将其设置为 `return_state=True` 来获得最终的状态输出，我们首先对序列进行LSTM操作，即将编码序列变换为LSTM最终输出的状态 ，并将其作为代表编码序列的上下文信息 `context` ，作为模型的输出。
+ChitEncoder子模型输入num_batch个由编码后单词和字符组成的，长为max_length的序列，输入张量形状为[num_batch, max_length]，输出与这个序列对应的上下文张量。为了简化代码，我们这里只使用一个最基本的LSTM单元，没有使用可以获得更佳效果的双向RNN、注意力机制等方法。在 `__init__` 方法中我们实例化一个常用的 `LSTM` 单元，并将其设置为 `return_state=True` 来获得最终的状态输出，我们首先对序列进行LSTM操作，即将编码序列变换为LSTM最终输出的状态 ，并将其作为代表编码序列的上下文信息 `context` ，作为模型的输出。
 
 `ChitEncoder` 子模型具体实现如下：
 
@@ -212,6 +212,14 @@ for batch_index in range(num_batches):
 
 训练大约需要…… （时间、step数）
 
+```sh
+step 0: loss 8.019347
+step 10: loss 5.006745
+step 20: loss 4.798050
+step 30: loss 4.728132
+step 40: loss 3.921826
+```
+
 训练loss到小于…… 的时候，可以使用：
 
 最后，我们需要一个用来对话的程序，来测试实际效果：
@@ -283,6 +291,10 @@ while True:
 生成的对话如下::
 
 ```shell
+> hi
+Bot:
 > hello
-go go go ...
+Bot:
+> faint
+Bot:
 ```
