@@ -105,7 +105,7 @@ class ChitChat(tf.keras.Model):
         self.index_word = vocabulary.tokenizer.index_word
         self.voc_size = vocabulary.size
 
-        # [batch_size, max_len] -> [batch_size, max_len, voc_size]
+        # [batch_size, max_len] -> [batch_size, max_len, embedding_dim]
         self.embedding = tf.keras.layers.Embedding(
             input_dim=self.voc_size,
             output_dim=EMBEDDING_DIM,
@@ -138,8 +138,10 @@ class ChitChat(tf.keras.Model):
             teacher_forcing_embeddings = self.embedding(teacher_forcing_targets)
 
         # outputs[:, 0, :].assign([self.__go_embedding()] * batch_size)
-        batch_go_embedding = tf.ones([batch_size, 1, 1]) * [self.__go_embedding()]
+        batch_go_embedding = tf.ones([batch_size, 1, 1]) * [self.__word_to_embedding(GO)]
         batch_go_one_hot = tf.ones([batch_size, 1, 1]) * [tf.one_hot(self.word_index[GO], self.voc_size)]
+
+        # import pdb; pdb.set_trace()
 
         outputs = batch_go_one_hot
         output = self.decoder(batch_go_embedding)
@@ -150,36 +152,36 @@ class ChitChat(tf.keras.Model):
                 target = teacher_forcing_embeddings[:, t, :]
                 decoder_input = tf.expand_dims(target, axis=1)
             else:
-                decoder_input = self.__indice_to_embedding(tf.argmax(output))
+                output = tf.squeeze(output)
+                indice = tf.argmax(output)
+                decoder_input = tf.ones([batch_size, 1, 1]) * [self.__indice_to_embedding(indice)]
 
             output = self.decoder(decoder_input)
 
         return outputs
 
-    def predict(self, inputs: List[int], temperature=1.) -> List[int]:
+    def predict(self, inputs: np.ndarray, temperature=1.) -> List[int]:
         '''doc'''
 
-        outputs = self([inputs])
+        inputs = np.expand_dims(inputs, 0)
+        outputs = self(inputs)
         outputs = tf.squeeze(outputs)
 
-        word_list = []
+        response_indices = []
         for t in range(1, MAX_LEN):
             output = outputs[t]
 
             indice = self.__logit_to_indice(output, temperature=temperature)
 
-            word = self.index_word[indice]
-
             if indice == self.word_index[DONE]:
                 break
 
-            word_list.append(word)
+            response_indices.append(indice)
 
-        return ' '.join(word_list)
+        return response_indices
 
-    def __go_embedding(self) -> tf.Tensor:
-        return self.embedding(
-            tf.convert_to_tensor(self.word_index[GO]))
+    def __word_to_embedding(self, word) -> tf.Tensor:
+        return self.__indice_to_embedding(self.word_index[word])
 
     def __logit_to_indice(
             self,
@@ -196,5 +198,5 @@ class ChitChat(tf.keras.Model):
         return indice
 
     def __indice_to_embedding(self, indice: int) -> tf.Tensor:
-        tensor = tf.convert_to_tensor([[indice]])
-        return self.embedding(tensor)
+        return self.embedding(
+            tf.convert_to_tensor(indice))

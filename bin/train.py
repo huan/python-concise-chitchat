@@ -49,7 +49,7 @@ def train() -> int:
     '''doc'''
     learning_rate = 1e-3
     num_batches = 8000
-    batch_size = 128
+    batch_size = 1280
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -96,7 +96,7 @@ def train() -> int:
             # your model code goes here
             tf.contrib.summary.scalar('loss', loss(
                 chitchat, encoder_inputs, decoder_outputs).numpy())
-            print('summary had been written.')
+            # print('summary had been written.')
 
     return 0
 
