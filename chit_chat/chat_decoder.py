@@ -52,6 +52,7 @@ class ChatDecoder(tf.keras.Model):
         output = batch_go_one_hot
 
         for t in range(0, MAX_LEN):
+            # import pdb; pdb.set_trace()
             if training:
                 target_indice = tf.expand_dims(
                     teacher_forcing_targets[:, t], axis=-1)
@@ -64,7 +65,7 @@ class ChatDecoder(tf.keras.Model):
                 inputs=decoder_inputs,
                 initial_state=states,
             )
-            output = self.dense(output)
-            outputs = tf.concat([outputs, output], 1)
+            output = tf.expand_dims(self.dense(output), axis=1)
+            outputs = tf.concat([outputs, output], axis=1)
 
         return outputs
