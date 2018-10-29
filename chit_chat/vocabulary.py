@@ -40,6 +40,3 @@ class Vocabulary:
         )
 
         return padded_sequences
-
-    def padded_sequences_to_texts(self, sequence: List[int]) -> str:
-        return 'tbw'

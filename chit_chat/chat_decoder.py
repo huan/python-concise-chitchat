@@ -41,6 +41,7 @@ class ChatDecoder(tf.keras.Model):
     ) -> tf.Tensor:
         '''chat decoder call'''
         batch_size = tf.shape(inputs[0])[0]
+        # import pdb; pdb.set_trace()
 
         batch_go_one_hot = tf.ones([batch_size, 1, 1]) \
             * [tf.one_hot(self.indice_go, self.voc_size)]
@@ -50,15 +51,14 @@ class ChatDecoder(tf.keras.Model):
         outputs = tf.zeros([batch_size, 0, self.voc_size])
         output = batch_go_one_hot
 
-        t = 0
-        while t < MAX_LEN:
+        for t in range(0, MAX_LEN):
             if training:
-                target_indice = teacher_forcing_targets[:, t]
+                target_indice = tf.expand_dims(
+                    teacher_forcing_targets[:, t], axis=-1)
             else:
                 target_indice = tf.argmax(output, axis=-1)
 
-            decoder_inputs = tf.expand_dims(
-                self.embedding(tf.convert_to_tensor(target_indice)), axis=1)
+            decoder_inputs = self.embedding(target_indice)
 
             output, *states = self.lstm_decoder(
                 inputs=decoder_inputs,
@@ -66,7 +66,5 @@ class ChatDecoder(tf.keras.Model):
             )
             output = self.dense(output)
             outputs = tf.concat([outputs, output], 1)
-
-            t = t + 1
 
         return outputs

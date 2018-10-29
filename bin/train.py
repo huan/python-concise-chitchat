@@ -49,7 +49,7 @@ def train() -> int:
     '''doc'''
     learning_rate = 1e-3
     num_batches = 8000
-    batch_size = 32
+    batch_size = 1024
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
