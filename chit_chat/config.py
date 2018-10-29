@@ -7,3 +7,7 @@ DONE = '\a'
 
 # max words per sentence
 MAX_LEN = 20
+
+
+EMBEDDING_DIM = 100
+LATENT_UNIT_NUM = 300
