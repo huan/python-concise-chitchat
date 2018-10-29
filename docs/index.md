@@ -1,23 +1,4 @@
-# 序列到序列（SEQ2SEQ）
-
-Sequence to Sequence学习最早由
-
-这篇文章主要是提供了一种崭新的RNN Encoder-Decoder算法，并且将其应用于机器翻译中。
-
-这种
-
-所谓的RNN Encoder-Decoder结构，简单的来说就是算法包含两部分，一个负责对输入的信息进行Encoding，将输入转换为向量形式。
-
-然后由Decoder对这个向量进行解码，还原为输出序列。
-
-而RNN Encoder-Decoder结构就是编码器与解码器都是使用RNN算法，一般为LSTM。
-
-LSTM的优势在于处理序列，它可以将上文包含的信息保存在隐藏状态中，这样就提高了算法对于上下文的理解能力。
-
-Encoder与Decoder各自可以算是单独的模型，一般是一层或多层的LSTM。
-
-Model 可以嵌套 Model
-Tensorflow Keras Functional函数式编程方法的强大之处
+# 闲聊对话机器人（SEQ2SEQ）
 
 序列到序列模型（Sequence to Sequence, SEQ2SEQ）是一种基于RNN的Encoder-Decoder结构，它也是现在谷歌应用于线上机器翻译的算法，翻译质量已经和人类水平不相上下。
 
@@ -36,20 +17,19 @@ Tensorflow Keras Functional函数式编程方法的强大之处
 How are you
 ```
 
-这个句子（序列）一共有3个单词。当我们听到这个由3个单词组成的句子后，根据我们的习惯，我们最倾向与回复的一句话是"Fine thank you"。我们希望建立这样一个模型：
-
-1. Encoder子模型: 输入num_batch个由编码后单词和标点组成的，长度为max_length的句子（个数不足max_length的句子，用代表PADDING的编码0补齐），输入张量形状为[num_batch, max_length]，输出上下文张量context；
-2. Decoder子模型: 输入上下文张量context，以及
-3. 
-4. 得到t时刻的单词编码启动循环；输时刻为0的输入时刻为t的单词编码，形状为[num_batch, 1]。输出预测的时刻为t+1的单词编码，形状为[num_batch, 1]；
-5. 执行时，我们将一句话输入Encoder，得到上下文张量；然后将上下文张量，和代表句子开始t0时刻的字符编码（
-6. 我们下面用`GO`表示句子开始，用`DONE`表示句子结束），输入Decoder，即可获得新的上下文张量，并预测得到句子的第一个单词编码。然后，我们将新的上下文张量，和预测得到的单词编码再重复送入Decoder，即可解码第二个单词，然后滚雪球式地生成第三个单词，第四个单词等等，直到单词数量达到max_length，或得到代表句子结束的单词`DONE`，即可完成单词序列的生成任务。
+这个句子（序列）一共有3个单词。当我们听到这个由3个单词组成的句子后，根据我们的习惯，我们最倾向与回复的一句话是"Fine thank you"。我们希望建立这样的模型，输入num_batch个由编码后单词和字符组成的，长为max_length的序列，输入张量形状为[num_batch, max_length]，输出与这个序列对应的序列（如聊天回复、翻译等）中单词和字符的概率分布，概率分布的维度为单词和字符种类数voc_size，输出张量形状为[num_batch, max_length, voc_size]。
 
 首先，还是实现一个简单的 ``DataLoader`` 类来读取文本，
 
 ```py
 DATASET_URL = 'https://github.com/zixia/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
 DATASET_FILE_NAME = 'concise-chit-chat-dataset.txt.gz'
+LATENT_UNIT_NUM = 100
+EMBEDDING_DIM = 50
+MAX_LEN = 20
+DONE = '\a'
+GO = '\b'
+
 
 class DataLoader():
     def __init__(self) -> None:
@@ -85,7 +65,7 @@ class DataLoader():
         return np.array(query_list), np.array(response_list)
 ```
 
-其次，我们还需要基于`DataLoader`加载的文本数据，建立一个词汇表`Vocabulary`来负责管理以下5项任务：
+其次，我们还需要基于 `DataLoader` 加载的文本数据，建立一个词汇表 `Vocabulary` 来负责管理以下5项任务：
 
 1. 将所有单词和标点符号进行编码；
 2. 记录词汇表大小；
@@ -106,9 +86,33 @@ class Vocabulary:
         return padded_sequences
 ```
 
-接下来进行模型的实现。我们建立一个ChitChat模型，接受的输入是
+接下来进行模型的实现。我们建立一个ChitChat模型，在 `__init__` 方法中我们将 `Vocabulary` 中的词汇到编码字典 `word_index` 和编码到词汇字典 `index_word` ，以及词汇量 `voc_size` 保存备用，实例化一个常用的 `Embedding` 单元，以及一个 `Encoder` 子模型和对应的 `Decoder` 子模型。子模型中需要使用Embedding单元、代表序列开始的GO字符编码，以及词汇表尺寸，我们通过构造参数传给它们。我们首先对序列进行Encoder操作，即将编码序列 `inputs` 变换为一个上下文向量 `context` ，然后再对其进行Decoder操作，得到输出编码序列张量，即作为模型的输出。变换后的序列张量形状为[num_batch, max_length, voc_size]。
 
-在 ``__init__`` 方法中我们实例化一个常用的 ``BasicLSTMCell`` 单元，以及一个线性变换用的全连接层，我们首先对序列进行One Hot操作，即将编码i变换为一个n维向量，其第i位为1，其余均为0。这里n为字符种类数num_char。变换后的序列张量形状为[num_batch, seq_length, num_chars]。接下来，我们将序列从头到尾依序送入RNN单元，即将当前时间t的RNN单元状态 ``state`` 和t时刻的序列 ``inputs[:, t, :]`` 送入RNN单元，得到当前时间的输出 ``output`` 和下一个时间t+1的RNN单元状态。取RNN单元最后一次的输出，通过全连接层变换到num_chars维，即作为模型的输出。
+`ChitChat` 模型具体实现如下：
+
+```py
+class ChitChat(tf.keras.Model):
+    def __init__(self, vocabulary):
+        super().__init__()
+        self.word_index = vocabulary.tokenizer.word_index
+        self.index_word = vocabulary.tokenizer.index_word
+        self.voc_size = vocabulary.size
+
+        self.embedding = tf.keras.layers.Embedding(
+            input_dim=self.voc_size, output_dim=EMBEDDING_DIM, mask_zero=True)
+        self.encoder = ChitEncoder(embedding=self.embedding)
+        self.decoder = ChatDecoder(embedding=self.embedding,
+            indice_go=self.word_index[GO], voc_size=self.voc_size)
+
+    def call(self, inputs, teacher_forcing_targets=None, training=None):
+        context = self.encoder(inputs)
+        return self.decoder(inputs=context, training=training,
+            teacher_forcing_targets=teacher_forcing_targets)
+```
+
+ChitEncoder子模型输入num_batch个由编码后单词和字符组成的，长为max_length的序列，输入张量形状为[num_batch, max_length]，输出与这个序列对应的上下文张量。为了简化代码，我们这里只使用一个最基本的LSTM单元，没有使用效果可以更佳的双向RNN、注意力机制等方法。在 `__init__` 方法中我们实例化一个常用的 `LSTM` 单元，并将其设置为 `return_state=True` 来获得最终的状态输出，我们首先对序列进行LSTM操作，即将编码序列变换为LSTM最终输出的状态 ，并将其作为代表编码序列的上下文信息 `context` ，作为模型的输出。
+
+`ChitEncoder` 子模型具体实现如下：
 
 ```py
 class ChitEncoder(tf.keras.Model):
@@ -117,29 +121,52 @@ class ChitEncoder(tf.keras.Model):
         self.lstm_encoder = tf.keras.layers.LSTM(
           units=LATENT_UNIT_NUM, return_state=True)
 
-    def call(self, inputs, training=None, mask=None):
-        _, *state = self.lstm_encoder(inputs)
-        return state
+    def call(self, inputs):
+        _, *context = self.lstm_encoder(inputs)
+        return context
 ```
 
+ChatDecoder子模型输入num_batch个上下文信息张量 `context` 。在 `__init__` 方法中我们保存 `embedding` 单元，序列起始标志GO字符的编码 `indice_go` 和词汇表容量 `voc_size` ，实例化一个常用的 `LSTM` 单元，并将其设置为输出单元状态 `return_state=True` 来获得LSTM的状态输出，以及一个全连接层 `Dense` 单元，负责将LSTM的输出变换为最终的单词字符分布概率，并将其作为这个上下文信息对应的单词符号序列概率分布张量，作为模型的输出，形状为[num_batch, max_length, voc_size]。
 
+`ChitEncoder` 子模型具体实现如下：
 
-.. figure:: ../_static/image/model/rnn_single.jpg
-    :width: 30%
-    :align: center
+```py
+class ChatDecoder(tf.keras.Model):
+    def __init__(self, embedding, voc_size, indice_go):
+        super().__init__()
 
-    ``output, state = self.cell(inputs[:, t, :], state)`` 图示
+        self.embedding = embedding
+        self.indice_go = indice_go
+        self.voc_size = voc_size
 
-.. figure:: ../_static/image/model/rnn.jpg
-    :width: 50%
-    :align: center
+        self.lstm_decoder = tf.keras.layers.LSTM(
+            units=LATENT_UNIT_NUM, return_state=True)
+        self.dense = tf.keras.layers.Dense(units=voc_size)
 
-    RNN流程图示
+    def call(self, inputs, teacher_forcing_targets=None, training=False):
+        batch_size = tf.shape(inputs[0])[0]
+        batch_go_one_hot = tf.ones([batch_size, 1, 1]) \
+            * [tf.one_hot(self.indice_go, self.voc_size)]
 
-具体实现如下：
+        outputs = tf.zeros([batch_size, 0, self.voc_size])
+        output = batch_go_one_hot
+        states = inputs
 
-.. literalinclude:: ../_static/code/zh/model/rnn/rnn.py
-    :lines: 7-21
+        for t in range(0, MAX_LEN):
+            if training:
+                target_indice = tf.expand_dims(
+                    teacher_forcing_targets[:, t], axis=-1)
+            else:
+                target_indice = tf.argmax(output, axis=-1)
+
+            decoder_inputs = self.embedding(target_indice)
+            output, *states = self.lstm_decoder(
+                inputs=decoder_inputs, initial_state=states)
+            output = self.dense(output)
+            outputs = tf.concat([outputs, output], 1)
+
+        return outputs
+```
 
 训练过程与前节基本一致，在此复述：
 
@@ -149,41 +176,113 @@ class ChitEncoder(tf.keras.Model):
 - 计算损失函数关于模型变量的导数；
 - 使用优化器更新模型参数以最小化损失函数。
 
-.. literalinclude:: ../_static/code/zh/model/rnn/rnn.py
-    :lines: 59-69
+```py
+def loss(model, x, y) -> tf.Tensor:
+    weights = tf.cast(tf.not_equal(y, 0), tf.float32)
+    prediction = model(inputs=x, teacher_forcing_targets=y, training=True)
+    return tf.contrib.seq2seq.sequence_loss(
+        prediction, tf.convert_to_tensor(y), weights)
 
-关于文本生成的过程有一点需要特别注意。之前，我们一直使用 ``tf.argmax()`` 函数，将对应概率最大的值作为预测值。然而对于文本生成而言，这样的预测方式过于绝对，会使得生成的文本失去丰富性。于是，我们使用 ``np.random.choice()`` 函数按照生成的概率分布取样。这样，即使是对应概率较小的字符，也有机会被取样到。同时，我们加入一个 ``temperature`` 参数控制分布的形状，参数值越大则分布越平缓（最大值和最小值的差值越小），生成文本的丰富度越高；参数值越小则分布越陡峭，生成文本的丰富度越低。
+def grad(model, inputs, targets):
+    with tf.GradientTape() as tape:
+        loss_value = loss(model, inputs, targets)
+    return tape.gradient(loss_value, model.variables)
 
-.. literalinclude:: ../_static/code/zh/model/rnn/rnn.py
-    :lines: 23-28
+learning_rate = 1e-2
+num_batches = 8000
+batch_size = 256
 
-通过这种方式进行“滚雪球”式的连续预测，即可得到生成文本。
+data_loader = DataLoader()
+vocabulary = Vocabulary(data_loader.raw_text)
+chitchat = ChitChat(vocabulary=vocabulary)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
-.. literalinclude:: ../_static/code/zh/model/rnn/rnn.py
-    :lines: 71-78
+for batch_index in range(num_batches):
+    queries, responses = data_loader.get_batch(batch_size)
 
-生成的文本如下::
+    queries_sequences = vocabulary.texts_to_padded_sequences(queries)
+    responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
-    diversity 0.200000:
-    conserted and conseive to the conterned to it is a self--and seast and the selfes as a seast the expecience and and and the self--and the sered is a the enderself and the sersed and as a the concertion of the series of the self in the self--and the serse and and the seried enes and seast and the sense and the eadure to the self and the present and as a to the self--and the seligious and the enders
-    
-    diversity 0.500000:
-    can is reast to as a seligut and the complesed
-    has fool which the self as it is a the beasing and us immery and seese for entoured underself of the seless and the sired a mears and everyther to out every sone thes and reapres and seralise as a streed liees of the serse to pease the cersess of the selung the elie one of the were as we and man one were perser has persines and conceity of all self-el
-    
-    diversity 1.000000:
-    entoles by
-    their lisevers de weltaale, arh pesylmered, and so jejurted count have foursies as is
-    descinty iamo; to semplization refold, we dancey or theicks-welf--atolitious on his
-    such which
-    here
-    oth idey of pire master, ie gerw their endwit in ids, is an trees constenved mase commars is leed mad decemshime to the mor the elige. the fedies (byun their ope wopperfitious--antile and the it as the f
-    
-    diversity 1.200000:
-    cain, elvotidue, madehoublesily
-    inselfy!--ie the rads incults of to prusely le]enfes patuateded:.--a coud--theiritibaior "nrallysengleswout peessparify oonsgoscess teemind thenry ansken suprerial mus, cigitioum: 4reas. whouph: who
-    eved
-    arn inneves to sya" natorne. hag open reals whicame oderedte,[fingo is
-    zisternethta simalfule dereeg hesls lang-lyes thas quiin turjentimy; periaspedey tomm--whach 
+    grads = grad(chitchat, queries_sequences, responses_sequences)
+    optimizer.apply_gradients(grads_and_vars=zip(grads, chitchat.variables))
 
-.. [#rnn_reference] 此处的任务及实现参考了 https://github.com/keras-team/keras/blob/master/examples/lstm_text_generation.py
+    print("step %d: loss %f" % (batch_index,
+        loss(chitchat, queries_sequences, responses_sequences).numpy())
+```
+
+训练大约需要…… （时间、step数）
+
+训练loss到小于…… 的时候，可以使用：
+
+最后，我们需要一个用来对话的程序，来测试实际效果：
+
+给 ChitChat 增加 predict 方法：
+
+```py
+class ChitChat(tf.keras.Model):
+    # ... append the following code to previous code
+    def predict(self, inputs, temperature=1.):
+        inputs = np.expand_dims(inputs, 0)
+        outputs = tf.squeeze(self(inputs))
+
+        response_indices = []
+        for t in range(1, MAX_LEN):
+            output = outputs[t]
+            indice = self.__logit_to_indice(output, temperature=temperature)
+            if indice == self.word_index[DONE]:
+                break
+            response_indices.append(indice)
+        return response_indices
+
+    def __logit_to_indice(self, inputs, temperature=1.):
+        inputs = tf.squeeze(inputs)
+        prob = tf.nn.softmax(inputs / temperature).numpy()
+        indice = np.random.choice(self.voc_size, p=prob)
+        return indice
+```
+
+Chat 程序……
+
+具体实现如下：
+
+```py
+data_loader = DataLoader()
+vocabulary = Vocabulary(data_loader.raw_text)
+
+chitchat = ChitChat(vocabulary)
+checkpoint = tf.train.Checkpoint(model=chitchat)
+
+checkpoint.restore(tf.train.latest_checkpoint('./checkpoints'))
+
+index_word = vocabulary.tokenizer.index_word
+word_index = vocabulary.tokenizer.word_index
+
+while True:
+    try:
+        query = input('> ').lower()
+        if query == 'q' or query == 'quit':
+            break
+        query = data_loader.preprocess(query)
+        query = '{} {} {}'.format(GO, query, DONE)
+
+        query_sequence = vocabulary.texts_to_padded_sequences([query])[0]
+        response_sequence = chitchat.predict(query_sequence, temperature=0.5)
+
+        response_word_list = [
+            index_word[indice]
+            for indice in response_sequence
+            if indice != 0 and indice != word_index[DONE]
+        ]
+
+        print('Bot:', ' '.join(response_word_list))
+
+    except KeyError:
+        print("OOV: Please use simple words with the ChitChat Bot!")
+```
+
+生成的对话如下::
+
+```shell
+> hello
+go go go ...
+```

@@ -52,7 +52,6 @@ class ChitChat(tf.keras.Model):
             inputs: List[List[int]],  # shape: [batch_size, max_len]
             teacher_forcing_targets: List[List[int]]=None,  # shape: [batch_size, max_len]
             training=None,
-            mask=None,
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
         context = self.encoder(inputs)

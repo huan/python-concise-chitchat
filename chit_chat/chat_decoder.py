@@ -27,7 +27,7 @@ class ChatDecoder(tf.keras.Model):
 
         self.lstm_decoder = tf.keras.layers.LSTM(
             units=LATENT_UNIT_NUM,
-            return_sequences=True,
+            # return_sequences=True,
             return_state=True,
         )
 

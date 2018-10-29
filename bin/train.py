@@ -47,9 +47,9 @@ def grad(model, inputs, targets):
 
 def train() -> int:
     '''doc'''
-    learning_rate = 1e-3
+    learning_rate = 1e-2
     num_batches = 8000
-    batch_size = 1024
+    batch_size = 256
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -72,30 +72,30 @@ def train() -> int:
 
     global_step = tf.train.get_or_create_global_step()
 
-    for batch_index in range(num_batches):
+    for step in range(num_batches):
         global_step.assign_add(1)
 
         queries, responses = data_loader.get_batch(batch_size)
 
-        encoder_inputs = vocabulary.texts_to_padded_sequences(queries)
-        decoder_outputs = vocabulary.texts_to_padded_sequences(responses)
+        queries_sequences = vocabulary.texts_to_padded_sequences(queries)
+        responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
-        grads = grad(chitchat, encoder_inputs, decoder_outputs)
+        grads = grad(chitchat, queries_sequences, responses_sequences)
 
         optimizer.apply_gradients(
             grads_and_vars=zip(grads, chitchat.variables)
         )
 
-        if batch_index % 10 == 0:
-            print("batch %d: loss %f" % (batch_index, loss(
-                chitchat, encoder_inputs, decoder_outputs).numpy()))
+        if step % 10 == 0:
+            print("step %d: loss %f" % (step, loss(
+                chitchat, queries_sequences, responses_sequences).numpy()))
             root.save('./data/save/model.ckpt')
             print('checkpoint saved.')
 
         with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             # your model code goes here
             tf.contrib.summary.scalar('loss', loss(
-                chitchat, encoder_inputs, decoder_outputs).numpy())
+                chitchat, queries_sequences, responses_sequences).numpy())
             # print('summary had been written.')
 
     return 0
