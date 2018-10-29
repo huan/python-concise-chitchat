@@ -1,16 +1,16 @@
 # CONCISE CHIT CHAT
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zixia/concise-chit-chat/blob/master/Concise_Chit_Chat.ipynb)
+TO BE FIXED: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zixia/concise-chit-chat/blob/master/Concise_Chit_Chat.ipynb)
 
 Book Chapter: Concise Chit Chat - <https://zixia.github.io/concise-chit-chat/>
 
 ## USAGE
 
 ```shell
-make install      # install python dependencies
-make train        # train the model(dataset will be downloaded automatically)
-make tensorboard  # monitor & analyse train process
-make chat         # chat with it!
+make install    # install python dependencies
+make train      # train the model(dataset will be downloaded automatically)
+make board      # monitor & analyse train process
+make chat       # chat with it!
 ```
 
 ## DEVELOP
