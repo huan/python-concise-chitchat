@@ -66,7 +66,7 @@ class ChitChat(tf.keras.Model):
     def predict(
             self,
             inputs: np.ndarray,
-            temperature=1.,
+            temperature=None,
     ) -> List[int]:
         '''doc'''
         inputs = np.expand_dims(inputs, 0)
@@ -89,13 +89,13 @@ class ChitChat(tf.keras.Model):
     def __logit_to_indice(
             self,
             inputs,
-            temperature=1.,
+            temperature=None,
     ) -> int:
         '''
         [vocabulary_size]
         convert one hot encoding to indice with temperature
         '''
-        if temperature == 0:
+        if temperature is None:
             indice = tf.argmax(inputs).numpy()
         else:
             prob = tf.nn.softmax(inputs / temperature).numpy()

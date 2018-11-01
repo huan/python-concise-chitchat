@@ -41,7 +41,7 @@ class ChatDecoder(tf.keras.Model):
     ) -> tf.Tensor:
         '''chat decoder call'''
         batch_size = tf.shape(inputs[0])[0]
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         batch_go_one_hot = tf.ones([batch_size, 1, 1]) \
             * [tf.one_hot(self.indice_go, self.voc_size)]

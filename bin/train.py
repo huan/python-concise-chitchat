@@ -16,12 +16,7 @@ chitchat = ChitChat(vocabulary=vocabulary)
 
 def loss(model, x, y) -> tf.Tensor:
     '''doc'''
-    weights = tf.cast(
-        tf.not_equal(y, 0),
-        tf.float32,
-    )
-
-    prediction = model(
+    predictions = model(
         inputs=x,
         teacher_forcing_targets=y,
         training=True,
@@ -30,15 +25,45 @@ def loss(model, x, y) -> tf.Tensor:
     # implment the following contrib function in a loop ?
     # https://stackoverflow.com/a/41135778/1123955
     # https://stackoverflow.com/q/48025004/1123955
-    loss_value = tf.contrib.seq2seq.sequence_loss(
-        prediction,
-        tf.convert_to_tensor(y),
-        weights,
+    # loss_value = tf.contrib.seq2seq.sequence_loss(
+    #     prediction,
+    #     tf.convert_to_tensor(y),
+    #     weights,
+    # )
+
+    # import pdb; pdb.set_trace()
+
+    y_without_go = tf.concat(
+        [
+            y[:, 1:],
+            tf.expand_dims(tf.zeros(tf.shape(y)[0], dtype=tf.int32), axis=1)
+        ],
+        axis=1
+    ).numpy()
+
+    weights = tf.cast(
+        tf.not_equal(y_without_go, 0),
+        tf.float32,
     )
 
-    print('prediction: ', [indice for indice in tf.argmax(prediction[0], axis=1).numpy()])
-    print('y: ', y[0])
-    print('loss: ', loss_value.numpy())
+    # https://stackoverflow.com/a/45823378/1123955
+    t = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=y_without_go,
+            logits=predictions,
+        )
+
+    loss_value = tf.reduce_sum(
+        t * weights
+    )
+    loss_value = loss_value / tf.cast(tf.shape(y)[0], tf.float32)
+
+    if True:
+        print('predictions: ', [
+            indice
+            for indice in tf.argmax(predictions[0], axis=1).numpy()
+        ])
+        print('%s [%s]' % ('y_without_go:', ', '.join([str(i) for i in y_without_go[0]])))
+        print('loss: ', loss_value.numpy())
 
     # import pdb; pdb.set_trace()
     return loss_value
@@ -49,14 +74,21 @@ def grad(model, inputs, targets):
     with tf.GradientTape() as tape:
         loss_value = loss(model, inputs, targets)
 
-    return tape.gradient(loss_value, model.variables)
+    gradients = tape.gradient(loss_value, model.variables)
+
+    # clipped_grads, global_norm = tf.clip_by_global_norm(gradients, 50.0)
+    # print('gradients: ', gradients)
+    # print('clipped_grads: ', clipped_grads)
+    # print('global norm: ', global_norm.numpy())
+
+    return gradients
 
 
 def train() -> int:
     '''doc'''
     learning_rate = 1e-2
     num_batches = 8000
-    batch_size = 32
+    batch_size = 64
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -93,11 +125,29 @@ def train() -> int:
             grads_and_vars=zip(grads, chitchat.variables)
         )
 
-        if step % 10 == 0 or True:
+        if step % 10 == 0:
             print("step %d: loss %f" % (step, loss(
                 chitchat, queries_sequences, responses_sequences).numpy()))
             checkpoint.save('./data/save/model.ckpt')
             print('checkpoint saved.')
+
+            # print('query: %s' % queries[0])
+            print('response: %s' % responses[0])
+            predicts = chitchat(
+                queries_sequences,
+                # teacher_forcing_targets=responses_sequences,
+                # training=True,
+            )
+
+            predict_sequence = tf.argmax(predicts[0], axis=1).numpy()
+            # print('predict sequence: %s' % predict_sequence)
+
+            predict_response = [
+                vocabulary.tokenizer.index_word[i]
+                for i in predict_sequence
+                if i != 0
+            ]
+            print('predict response: %s' % predict_response)
 
         with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             # your model code goes here

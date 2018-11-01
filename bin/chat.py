@@ -45,7 +45,7 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
         query = '{} {} {}'.format(GO, query, DONE)
         # Evaluate sentence
         query_sequence = vocabulary.texts_to_padded_sequences([query])[0]
-        response_sequence = chitchat.predict(query_sequence, temperature=0)
+        response_sequence = chitchat.predict(query_sequence)
 
         # Format and print response sentence
         response_word_list = [

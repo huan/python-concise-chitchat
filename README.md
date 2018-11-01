@@ -33,6 +33,7 @@ make dataset      # generate the formated dataset
 - [Design and build a chatbot using data from the Cornell Movie Dialogues corpus, using Keras](https://github.com/sekharvth/simple-chatbot-keras)
 - [PyTorch Chatbot Tutorial](https://pytorch.org/tutorials/beginner/chatbot_tutorial.html)
 - [A ten-minute introduction to sequence-to-sequence learning in Keras](https://blog.keras.io/a-ten-minute-introduction-to-sequence-to-sequence-learning-in-keras.html)
+- [Use tf.clip_by_global_norm for gradient clipping](https://stackoverflow.com/a/44798131/1123955)
   
 ## AUTHOR
 
