@@ -35,28 +35,28 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
     index_word = vocabulary.tokenizer.index_word
     word_index = vocabulary.tokenizer.word_index
 
+    print('GO: %d, DONE: %d' % (word_index[GO], word_index[DONE]))
+
     while True:
-        try:
-            query = input('> ').lower()
-            if query == 'q' or query == 'quit':
-                break
-            query = data_loader.preprocess(query)
-            query = '{} {} {}'.format(GO, query, DONE)
-            # Evaluate sentence
-            query_sequence = vocabulary.texts_to_padded_sequences([query])[0]
-            response_sequence = chitchat.predict(query_sequence, temperature=0.5)
+        query = input('> ').lower()
+        if query == 'q' or query == 'quit':
+            break
+        query = data_loader.preprocess(query)
+        query = '{} {} {}'.format(GO, query, DONE)
+        # Evaluate sentence
+        query_sequence = vocabulary.texts_to_padded_sequences([query])[0]
+        response_sequence = chitchat.predict(query_sequence, temperature=0)
 
-            # Format and print response sentence
-            response_word_list = [
-                index_word[indice]
-                for indice in response_sequence
-                if indice != 0 and indice != word_index[DONE]
-            ]
+        # Format and print response sentence
+        response_word_list = [
+            index_word[indice]
+            for indice in response_sequence
+            if indice != 0 and indice != word_index[DONE]
+        ]
 
-            print('Bot:', ' '.join(response_word_list))
-
-        except KeyError:
-            print("OOV: Please use simple words with the ChitChat Bot!")
+        print('Bot query:', query_sequence)
+        print('Bot response:', response_sequence)
+        print('Bot:', ' '.join(response_word_list))
 
 
 main()

@@ -30,11 +30,18 @@ def loss(model, x, y) -> tf.Tensor:
     # implment the following contrib function in a loop ?
     # https://stackoverflow.com/a/41135778/1123955
     # https://stackoverflow.com/q/48025004/1123955
-    return tf.contrib.seq2seq.sequence_loss(
+    loss_value = tf.contrib.seq2seq.sequence_loss(
         prediction,
         tf.convert_to_tensor(y),
         weights,
     )
+
+    print('prediction: ', [indice for indice in tf.argmax(prediction[0], axis=1).numpy()])
+    print('y: ', y[0])
+    print('loss: ', loss_value.numpy())
+
+    # import pdb; pdb.set_trace()
+    return loss_value
 
 
 def grad(model, inputs, targets):
@@ -58,13 +65,13 @@ def train() -> int:
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
-    root = tf.train.Checkpoint(
+    checkpoint = tf.train.Checkpoint(
         optimizer=optimizer,
         model=chitchat,
         optimizer_step=tf.train.get_or_create_global_step(),
     )
 
-    root.restore(tf.train.latest_checkpoint('./data/save'))
+    checkpoint.restore(tf.train.latest_checkpoint('./data/save'))
     print('checkpoint restored.')
 
     writer = tf.contrib.summary.create_file_writer('./data/board')
@@ -86,10 +93,10 @@ def train() -> int:
             grads_and_vars=zip(grads, chitchat.variables)
         )
 
-        if step % 10 == 0:
+        if step % 10 == 0 or True:
             print("step %d: loss %f" % (step, loss(
                 chitchat, queries_sequences, responses_sequences).numpy()))
-            root.save('./data/save/model.ckpt')
+            checkpoint.save('./data/save/model.ckpt')
             print('checkpoint saved.')
 
         with tf.contrib.summary.record_summaries_every_n_global_steps(1):

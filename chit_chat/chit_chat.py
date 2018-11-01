@@ -55,16 +55,20 @@ class ChitChat(tf.keras.Model):
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
         context = self.encoder(inputs)
-        return self.decoder(
+        outputs = self.decoder(
             inputs=context,
             training=training,
             teacher_forcing_targets=teacher_forcing_targets,
         )
+        # import pdb; pdb.set_trace()
+        return outputs
 
-
-    def predict(self, inputs: np.ndarray, temperature=1.) -> List[int]:
+    def predict(
+            self,
+            inputs: np.ndarray,
+            temperature=1.,
+    ) -> List[int]:
         '''doc'''
-
         inputs = np.expand_dims(inputs, 0)
         outputs = self(inputs)
         outputs = tf.squeeze(outputs)
@@ -91,7 +95,9 @@ class ChitChat(tf.keras.Model):
         [vocabulary_size]
         convert one hot encoding to indice with temperature
         '''
-        inputs = tf.squeeze(inputs)
-        prob = tf.nn.softmax(inputs / temperature).numpy()
-        indice = np.random.choice(self.voc_size, p=prob)
+        if temperature == 0:
+            indice = tf.argmax(inputs).numpy()
+        else:
+            prob = tf.nn.softmax(inputs / temperature).numpy()
+            indice = np.random.choice(self.voc_size, p=prob)
         return indice
