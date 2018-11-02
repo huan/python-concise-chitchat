@@ -74,7 +74,7 @@ class ChitChat(tf.keras.Model):
         outputs = tf.squeeze(outputs)
 
         response_indices = []
-        for t in range(1, MAX_LEN):
+        for t in range(0, MAX_LEN):
             output = outputs[t]
 
             indice = self.__logit_to_indice(output, temperature=temperature)
