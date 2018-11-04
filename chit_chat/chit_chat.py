@@ -54,6 +54,8 @@ class ChitChat(tf.keras.Model):
             training=None,
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
+        # import pdb; pdb.set_trace()
+
         context = self.encoder(inputs)
         outputs = self.decoder(
             inputs=context,

@@ -13,7 +13,24 @@ make board      # monitor & analyse train process
 make chat       # chat with it!
 ```
 
+### Use Nvidia Docker
+
+```shell
+make docker   # this will get into the tensorflow/tensorflow:latest-py3-gpu docker container
+make board &  # open tensorboard at http://localhost:6006
+make train
+make chat
+```
+
 ## DEVELOP
+
+### Open VSCode
+
+```shell
+make code
+```
+
+### Download Original Corpus Dataset and Preprocdess Them
 
 ```shell
 make download     # download original dataset
@@ -34,7 +51,8 @@ make dataset      # generate the formated dataset
 - [PyTorch Chatbot Tutorial](https://pytorch.org/tutorials/beginner/chatbot_tutorial.html)
 - [A ten-minute introduction to sequence-to-sequence learning in Keras](https://blog.keras.io/a-ten-minute-introduction-to-sequence-to-sequence-learning-in-keras.html)
 - [Use tf.clip_by_global_norm for gradient clipping](https://stackoverflow.com/a/44798131/1123955)
-  
+- [Understanding Python's "with" statement](http://effbot.org/zone/python-with-statement.htm)
+
 ## AUTHOR
 
 [@zixia](https://github.com/zixia) [Huan LI](https://linkedin.com/in/zixia) \<zixia@zixia.net\>

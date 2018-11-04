@@ -9,10 +9,6 @@ from chit_chat import (
 
 tf.enable_eager_execution()
 
-data_loader = DataLoader()
-vocabulary = Vocabulary(data_loader.raw_text)
-chitchat = ChitChat(vocabulary=vocabulary)
-
 
 def loss(model, x, y) -> tf.Tensor:
     '''doc'''
@@ -57,14 +53,6 @@ def loss(model, x, y) -> tf.Tensor:
     )
     loss_value = loss_value / tf.cast(tf.shape(y)[0], tf.float32)
 
-    if True:
-        print('predictions: ', [
-            indice
-            for indice in tf.argmax(predictions[0], axis=1).numpy()
-        ])
-        print('%s [%s]' % ('y_without_go:', ', '.join([str(i) for i in y_without_go[0]])))
-        print('loss: ', loss_value.numpy())
-
     # import pdb; pdb.set_trace()
     return loss_value
 
@@ -76,19 +64,26 @@ def grad(model, inputs, targets):
 
     gradients = tape.gradient(loss_value, model.variables)
 
-    # clipped_grads, global_norm = tf.clip_by_global_norm(gradients, 50.0)
+    clipped_grads, global_norm = tf.clip_by_global_norm(gradients, 50.0)
     # print('gradients: ', gradients)
     # print('clipped_grads: ', clipped_grads)
     # print('global norm: ', global_norm.numpy())
 
-    return gradients
+    with tf.contrib.summary.always_record_summaries():
+        tf.contrib.summary.scalar('global_norm', global_norm.numpy())
+
+    return clipped_grads
 
 
 def train() -> int:
     '''doc'''
     learning_rate = 1e-2
     num_batches = 8000
-    batch_size = 64
+    batch_size = 4
+
+    data_loader = DataLoader()
+    vocabulary = Vocabulary(data_loader.raw_text)
+    chitchat = ChitChat(vocabulary=vocabulary)
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -126,34 +121,43 @@ def train() -> int:
         )
 
         if step % 10 == 0:
-            print("step %d: loss %f" % (step, loss(
-                chitchat, queries_sequences, responses_sequences).numpy()))
+            monitor(
+                chitchat,
+                vocabulary,
+                queries[:3],
+                queries_sequences[:3],
+                step,
+                loss(chitchat, queries_sequences, responses_sequences).numpy()
+            )
+
+        if step % 100 == 0:
             checkpoint.save('./data/save/model.ckpt')
             print('checkpoint saved.')
 
-            # print('query: %s' % queries[0])
-            print('response: %s' % responses[0])
-            predicts = chitchat(
-                queries_sequences,
-                # teacher_forcing_targets=responses_sequences,
-                # training=True,
-            )
-
-            predict_sequence = tf.argmax(predicts[0], axis=1).numpy()
-            # print('predict sequence: %s' % predict_sequence)
-
-            predict_response = [
-                vocabulary.tokenizer.index_word[i]
-                for i in predict_sequence
-                if i != 0
-            ]
-            print('predict response: %s' % predict_response)
-
-        with tf.contrib.summary.record_summaries_every_n_global_steps(1):
+        with tf.contrib.summary.always_record_summaries():
             # your model code goes here
             tf.contrib.summary.scalar('loss', loss(
                 chitchat, queries_sequences, responses_sequences).numpy())
             # print('summary had been written.')
+
+        kernel, recurrent_kernel, bias = chitchat.encoder.lstm_encoder.variables
+        with tf.name_scope('encoder/kernel'):
+            variable_summaries(kernel)
+        with tf.name_scope('encoder/recurrent_kernel'):
+            variable_summaries(recurrent_kernel)
+        with tf.name_scope('encoder/bias'):
+            variable_summaries(bias)
+
+        kernel, recurrent_kernel, bias = chitchat.decoder.lstm_decoder.variables
+        with tf.name_scope('decoder/kernel'):
+            variable_summaries(kernel)
+        with tf.name_scope('decoder/recurrent_kernel'):
+            variable_summaries(recurrent_kernel)
+        with tf.name_scope('decoder/bias'):
+            variable_summaries(bias)
+
+        with tf.name_scope('embedding'):
+            variable_summaries(chitchat.embedding.variables)
 
     return 0
 
@@ -161,6 +165,50 @@ def train() -> int:
 def main() -> int:
     '''doc'''
     return train()
+
+
+def monitor(
+        chitchat: ChitChat,
+        vocabulary: Vocabulary,
+        queries,
+        query_sequences,
+        step,
+        loss_value,
+) -> None:
+    predicts = chitchat(
+        query_sequences,
+    )
+
+    predict_sequences = tf.argmax(predicts, axis=2).numpy()
+
+    predict_responses = [
+        ' '.join([
+            vocabulary.tokenizer.index_word[i]
+            for i in predict_sequence
+            if i != 0
+        ])
+        for predict_sequence in predict_sequences
+    ]
+
+    print('------- step %d , loss %f -------' % (step, loss_value))
+    for query, response in zip(queries, predict_responses):
+        print('>>>>>>>>>>>>>>>>>>>>>>>>>>>> %s' % query)
+        print('> %s' % response)
+
+
+def variable_summaries(var):
+    """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+    # import pdb; pdb.set_trace()
+    with tf.contrib.summary.always_record_summaries():
+        with tf.name_scope('summaries'):
+            mean = tf.reduce_mean(var)
+            tf.contrib.summary.scalar('mean', mean)
+            with tf.name_scope('stddev'):
+                stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+            tf.contrib.summary.scalar('stddev', stddev)
+            tf.contrib.summary.scalar('max', tf.reduce_max(var))
+            tf.contrib.summary.scalar('min', tf.reduce_min(var))
+            tf.contrib.summary.histogram('histogram', var)
 
 
 main()

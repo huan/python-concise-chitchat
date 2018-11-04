@@ -25,9 +25,8 @@ class ChatDecoder(tf.keras.Model):
         self.indice_go = indice_go
         self.voc_size = voc_size
 
-        self.lstm_decoder = tf.keras.layers.LSTM(
+        self.lstm_decoder = tf.keras.layers.CuDNNLSTM(
             units=LATENT_UNIT_NUM,
-            # return_sequences=True,
             return_state=True,
         )
 
@@ -41,7 +40,7 @@ class ChatDecoder(tf.keras.Model):
     ) -> tf.Tensor:
         '''chat decoder call'''
         batch_size = tf.shape(inputs[0])[0]
-        # import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
 
         batch_go_one_hot = tf.ones([batch_size, 1, 1]) \
             * [tf.one_hot(self.indice_go, self.voc_size)]
