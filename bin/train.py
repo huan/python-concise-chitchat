@@ -191,9 +191,9 @@ def monitor(
     ]
 
     print('------- step %d , loss %f -------' % (step, loss_value))
-    for query, response in zip(queries, predict_responses):
+    for query, predict_response in zip(queries, predict_responses):
         print('>>>>>>>>>>>>>>>>>>>>>>>>>>>> %s' % query)
-        print('> %s' % response)
+        print('> %s' % predict_response)
 
 
 def variable_summaries(var):
