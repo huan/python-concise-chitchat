@@ -111,7 +111,10 @@ def train() -> int:
 
         queries, responses = data_loader.get_batch(batch_size)
 
-        queries_sequences = vocabulary.texts_to_padded_sequences(queries)
+        queries_sequences = vocabulary.texts_to_padded_sequences(
+            queries,
+            padding='pre',
+        )
         responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
         grads = grad(chitchat, queries_sequences, responses_sequences)

@@ -28,14 +28,15 @@ class Vocabulary:
 
     def texts_to_padded_sequences(
             self,
-            text_list: List[List[str]]
+            text_list: List[List[str]],
+            padding='post',
     ) -> tf.Tensor:
         '''doc'''
         sequence_list = self.tokenizer.texts_to_sequences(text_list)
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(
             sequence_list,
             maxlen=MAX_LEN,
-            padding='post',
+            padding=padding,
             truncating='post',
         )
 
