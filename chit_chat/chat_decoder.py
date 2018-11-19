@@ -62,7 +62,7 @@ class ChatDecoder(tf.keras.Model):
 
             output, *states = self.lstm_decoder(
                 inputs=decoder_inputs,
-                initial_state=states, # (Tensor, Tensor)
+                initial_state=states,   # (Tensor, Tensor)
                 # state_hidden, state_cell
             )
             output = tf.expand_dims(self.dense(output), axis=1)

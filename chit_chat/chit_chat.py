@@ -57,6 +57,7 @@ class ChitChat(tf.keras.Model):
         # import pdb; pdb.set_trace()
 
         context = self.encoder(inputs)
+
         outputs = self.decoder(
             inputs=context,
             training=training,
