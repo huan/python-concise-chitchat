@@ -19,7 +19,7 @@ class ChitEncoder(tf.keras.Model):
         super().__init__()
         self.embedding = embedding
 
-        self.lstm_encoder = tf.keras.layers.LSTM(
+        self.lstm_encoder = tf.keras.layers.CuDNNLSTM(
             units=LATENT_UNIT_NUM,
             return_state=True,
         )

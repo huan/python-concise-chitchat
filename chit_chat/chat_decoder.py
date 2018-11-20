@@ -25,7 +25,7 @@ class ChatDecoder(tf.keras.Model):
         self.indice_go = indice_go
         self.voc_size = voc_size
 
-        self.lstm_decoder = tf.keras.layers.LSTM(
+        self.lstm_decoder = tf.keras.layers.CuDNNLSTM(
             units=LATENT_UNIT_NUM,
             return_state=True,
         )
@@ -52,7 +52,7 @@ class ChatDecoder(tf.keras.Model):
 
         for t in range(0, MAX_LEN):
             # import pdb; pdb.set_trace()
-            if training:
+            if training and teacher_forcing_targets is not None:
                 target_indice = tf.expand_dims(
                     teacher_forcing_targets[:, t], axis=-1)
             else:

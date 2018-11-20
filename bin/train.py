@@ -51,7 +51,8 @@ def loss(model, x, y) -> tf.Tensor:
     loss_value = tf.reduce_sum(
         t * weights
     )
-    loss_value = loss_value / tf.cast(tf.shape(y)[0], tf.float32)
+    # loss_value = loss_value / tf.cast(tf.shape(y)[0], tf.float32)
+    loss_value = loss_value / tf.reduce_sum(weights)
 
     # import pdb; pdb.set_trace()
     return loss_value
@@ -77,9 +78,9 @@ def grad(model, inputs, targets):
 
 def train() -> int:
     '''doc'''
-    learning_rate = 1e-2
-    num_batches = 8000
-    batch_size = 4
+    learning_rate = 1e-1
+    num_steps = 500
+    batch_size = 64
 
     data_loader = DataLoader()
     vocabulary = Vocabulary(data_loader.raw_text)
@@ -106,7 +107,7 @@ def train() -> int:
 
     global_step = tf.train.get_or_create_global_step()
 
-    for step in range(num_batches):
+    for step in range(num_steps):
         global_step.assign_add(1)
 
         queries, responses = data_loader.get_batch(batch_size)
@@ -127,8 +128,9 @@ def train() -> int:
             monitor(
                 chitchat,
                 vocabulary,
-                queries[:3],
-                queries_sequences[:3],
+                queries[:2],
+                responses[:2],
+                queries_sequences[:2],
                 step,
                 loss(chitchat, queries_sequences, responses_sequences).numpy()
             )
@@ -137,30 +139,12 @@ def train() -> int:
             checkpoint.save('./data/save/model.ckpt')
             print('checkpoint saved.')
 
+
         with tf.contrib.summary.always_record_summaries():
             # your model code goes here
             tf.contrib.summary.scalar('loss', loss(
                 chitchat, queries_sequences, responses_sequences).numpy())
             # print('summary had been written.')
-
-        kernel, recurrent_kernel, bias = chitchat.encoder.lstm_encoder.variables
-        with tf.name_scope('encoder/kernel'):
-            variable_summaries(kernel)
-        with tf.name_scope('encoder/recurrent_kernel'):
-            variable_summaries(recurrent_kernel)
-        with tf.name_scope('encoder/bias'):
-            variable_summaries(bias)
-
-        kernel, recurrent_kernel, bias = chitchat.decoder.lstm_decoder.variables
-        with tf.name_scope('decoder/kernel'):
-            variable_summaries(kernel)
-        with tf.name_scope('decoder/recurrent_kernel'):
-            variable_summaries(recurrent_kernel)
-        with tf.name_scope('decoder/bias'):
-            variable_summaries(bias)
-
-        with tf.name_scope('embedding'):
-            variable_summaries(chitchat.embedding.variables)
 
     return 0
 
@@ -174,10 +158,33 @@ def monitor(
         chitchat: ChitChat,
         vocabulary: Vocabulary,
         queries,
+        responses,
         query_sequences,
         step,
         loss_value,
 ) -> None:
+
+    kernel, recurrent_kernel, bias = chitchat.encoder.lstm_encoder.variables
+    with tf.name_scope('encoder/kernel'):
+        variable_summaries(kernel)
+    with tf.name_scope('encoder/recurrent_kernel'):
+        variable_summaries(recurrent_kernel)
+    with tf.name_scope('encoder/bias'):
+        variable_summaries(bias)
+
+    kernel, recurrent_kernel, bias = chitchat.decoder.lstm_decoder.variables
+    with tf.name_scope('decoder/kernel'):
+        variable_summaries(kernel)
+    with tf.name_scope('decoder/recurrent_kernel'):
+        variable_summaries(recurrent_kernel)
+    with tf.name_scope('decoder/bias'):
+        variable_summaries(bias)
+
+    with tf.name_scope('embedding'):
+        variable_summaries(chitchat.embedding.variables)
+
+    # output
+
     predicts = chitchat(
         query_sequences,
     )
@@ -194,9 +201,10 @@ def monitor(
     ]
 
     print('------- step %d , loss %f -------' % (step, loss_value))
-    for query, predict_response in zip(queries, predict_responses):
-        print('>>>>>>>>>>>>>>>>>>>>>>>>>>>> %s' % query)
-        print('> %s' % predict_response)
+    for query, response, predict_response in zip(queries, responses, predict_responses):
+        print('<<<<<<<<<<<<<<<<<<<<<<<<<<<< %s' % query)
+        print('>>>>>>>>>>>>>>>>>>>>>>>>>>>> %s' % response)
+        print('> %s\n' % predict_response)
 
 
 def variable_summaries(var):
