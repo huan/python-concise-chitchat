@@ -11,7 +11,12 @@ if [[ ! "$DOCKER_CMD" ]]; then
 
   if [[ $(which nvidia-docker) ]]; then
     DOCKER_CMD=nvidia-docker
-    IMAGE_NAME=tensorflow/tensorflow:latest-gpu-py3
+    # IMAGE_NAME=tensorflow/tensorflow:latest-gpu-py3
+    IMAGE_NAME=tensorflow/tensorflow:nightly-devel-gpu-py3
+  fi
+
+  if [[ "$DOCKER_PULL" ]]; then
+    docker pull ${IMAGE_NAME}
   fi
 fi
 
