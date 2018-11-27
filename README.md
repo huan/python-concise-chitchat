@@ -53,6 +53,11 @@ make dataset      # generate the formated dataset
 - [Use tf.clip_by_global_norm for gradient clipping](https://stackoverflow.com/a/44798131/1123955)
 - [Understanding Python's "with" statement](http://effbot.org/zone/python-with-statement.htm)
 
+## TODO
+
+- [TensorFlow Neural Machine Translation Tutorial](https://github.com/tensorflow/nmt)
+- [Attention? Attention!](https://lilianweng.github.io/lil-log/2018/06/24/attention-attention.html)
+
 ## AUTHOR
 
 [@zixia](https://github.com/zixia) [Huan LI](https://linkedin.com/in/zixia) \<zixia@zixia.net\>
