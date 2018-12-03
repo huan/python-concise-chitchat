@@ -1,8 +1,8 @@
 # CONCISE CHIT CHAT
 
-TO BE FIXED: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zixia/concise-chit-chat/blob/master/Concise_Chit_Chat.ipynb)
+TO BE FIXED: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/huan/concise-chit-chat/blob/master/Concise_Chit_Chat.ipynb)
 
-Book Chapter: Concise Chit Chat - <https://zixia.github.io/concise-chit-chat/>
+Book Chapter: Concise Chit Chat - <https://huan.github.io/concise-chit-chat/>
 
 ## USAGE
 
@@ -60,7 +60,7 @@ make dataset      # generate the formated dataset
 
 ## AUTHOR
 
-[@zixia](https://github.com/zixia) [Huan LI](https://linkedin.com/in/zixia) \<zixia@zixia.net\>
+[@zixia](https://github.com/huan) [Huan LI](https://linkedin.com/in/zixia) \<zixia@zixia.net\>
 
 <a href="http://stackoverflow.com/users/1123955/zixia">
   <img src="http://stackoverflow.com/users/flair/1123955.png" width="208" height="58" alt="profile for zixia at Stack Overflow, Q&amp;A for professional and enthusiast programmers" title="profile for zixia at Stack Overflow, Q&amp;A for professional and enthusiast programmers">
