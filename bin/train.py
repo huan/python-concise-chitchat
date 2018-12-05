@@ -78,9 +78,9 @@ def grad(model, inputs, targets):
 
 def train() -> int:
     '''doc'''
-    learning_rate = 1e-1
-    num_steps = 500
-    batch_size = 64
+    learning_rate = 1e-2
+    num_steps = 500000000
+    batch_size = 32
 
     data_loader = DataLoader()
     vocabulary = Vocabulary(data_loader.raw_text)
@@ -164,21 +164,21 @@ def monitor(
         loss_value,
 ) -> None:
 
-    kernel, recurrent_kernel, bias = chitchat.encoder.lstm_encoder.variables
-    with tf.name_scope('encoder/kernel'):
-        variable_summaries(kernel)
-    with tf.name_scope('encoder/recurrent_kernel'):
-        variable_summaries(recurrent_kernel)
-    with tf.name_scope('encoder/bias'):
-        variable_summaries(bias)
+    # kernel, recurrent_kernel, bias = chitchat.encoder.lstm_encoder.variables
+    # with tf.name_scope('encoder/kernel'):
+    #     variable_summaries(kernel)
+    # with tf.name_scope('encoder/recurrent_kernel'):
+    #     variable_summaries(recurrent_kernel)
+    # with tf.name_scope('encoder/bias'):
+    #     variable_summaries(bias)
 
-    kernel, recurrent_kernel, bias = chitchat.decoder.lstm_decoder.variables
-    with tf.name_scope('decoder/kernel'):
-        variable_summaries(kernel)
-    with tf.name_scope('decoder/recurrent_kernel'):
-        variable_summaries(recurrent_kernel)
-    with tf.name_scope('decoder/bias'):
-        variable_summaries(bias)
+    # kernel, recurrent_kernel, bias = chitchat.decoder.lstm_decoder.variables
+    # with tf.name_scope('decoder/kernel'):
+    #     variable_summaries(kernel)
+    # with tf.name_scope('decoder/recurrent_kernel'):
+    #     variable_summaries(recurrent_kernel)
+    # with tf.name_scope('decoder/bias'):
+    #     variable_summaries(bias)
 
     with tf.name_scope('embedding'):
         variable_summaries(chitchat.embedding.variables)

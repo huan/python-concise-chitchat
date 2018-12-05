@@ -25,11 +25,12 @@ class ChatDecoder(tf.keras.Model):
         self.indice_go = indice_go
         self.voc_size = voc_size
 
-        self.lstm_decoder = tf.keras.layers.CuDNNLSTM(
-            units=LATENT_UNIT_NUM,
+        lstm = tf.keras.layers.CuDNNLSTM(
+            units=2 * LATENT_UNIT_NUM,
             return_state=True,
         )
 
+        self.decoder = lstm
         self.dense = tf.keras.layers.Dense(units=voc_size)
 
     def call(
@@ -60,7 +61,7 @@ class ChatDecoder(tf.keras.Model):
 
             decoder_inputs = self.embedding(target_indice)
 
-            output, *states = self.lstm_decoder(
+            output, *states = self.decoder(
                 inputs=decoder_inputs,
                 initial_state=states,   # (Tensor, Tensor)
                 # state_hidden, state_cell
