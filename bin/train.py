@@ -80,7 +80,7 @@ def train() -> int:
     '''doc'''
     learning_rate = 1e-2
     num_steps = 500000000
-    batch_size = 32
+    batch_size = 512
 
     data_loader = DataLoader()
     vocabulary = Vocabulary(data_loader.raw_text)
