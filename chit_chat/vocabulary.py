@@ -10,6 +10,7 @@ from .config import (
     DONE,
     GO,
     MAX_LEN,
+    PAD,
 )
 
 
@@ -18,8 +19,8 @@ class Vocabulary:
     def __init__(self, text: str) -> None:
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
         self.tokenizer.fit_on_texts(
-            [GO, DONE] + re.split(
-                r'[\s\t\n]',
+            [DONE, GO, PAD] + re.split(
+                r'[\n\s\t]',
                 text,
             )
         )
@@ -29,15 +30,14 @@ class Vocabulary:
     def texts_to_padded_sequences(
             self,
             text_list: List[List[str]],
-            padding='post',
     ) -> tf.Tensor:
         '''doc'''
         sequence_list = self.tokenizer.texts_to_sequences(text_list)
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(
             sequence_list,
             maxlen=MAX_LEN,
-            padding=padding,
             truncating='post',
+            value=self.tokenizer.word_index.get(PAD),
         )
 
         return padded_sequences

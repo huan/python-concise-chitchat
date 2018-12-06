@@ -4,6 +4,7 @@
 # DONE for end of the sentence
 GO = '\b'
 DONE = '\a'
+PAD = '\t'
 
 # max words per sentence
 MAX_LEN = 20

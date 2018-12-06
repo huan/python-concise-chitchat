@@ -26,12 +26,13 @@ class ChatDecoder(tf.keras.Model):
         self.voc_size = voc_size
 
         lstm = tf.keras.layers.CuDNNLSTM(
-            units=2 * LATENT_UNIT_NUM,
-            return_state=True,
+            units=LATENT_UNIT_NUM,
+            return_sequences=True,
         )
+        self.bi_lstm = tf.keras.layers.Bidirectional(lstm)
 
-        self.decoder = lstm
-        self.dense = tf.keras.layers.Dense(units=voc_size)
+        dense = tf.keras.layers.Dense(units=voc_size)
+        self.td_dense = tf.keras.layers.TimeDistributed(dense)
 
     def call(
             self,
