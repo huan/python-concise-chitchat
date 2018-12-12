@@ -21,7 +21,8 @@ if [[ ! "$DOCKER_CMD" ]]; then
 fi
 
 if [[ ! "$CONTAINER_NAME" ]]; then
-  CONTAINER_NAME="$(id -nu)"-concise-chit-chat
+  # CONTAINER_NAME="$(id -nu)"-concise-chit-chat
+  CONTAINER_NAME="${USER}"-concise-chit-chat
 fi
 
 cat <<_MSG_
