@@ -10,6 +10,7 @@ from .config import (
     DONE,
     GO,
     MAX_LEN,
+    PAD,
 )
 
 
@@ -18,7 +19,7 @@ class Vocabulary:
     def __init__(self, text: str) -> None:
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
         self.tokenizer.fit_on_texts(
-            [GO, DONE] + re.split(
+            [GO, DONE, PAD] + re.split(
                 r'[\s\t\n]',
                 text,
             )
@@ -38,6 +39,7 @@ class Vocabulary:
             maxlen=MAX_LEN,
             padding=padding,
             truncating='post',
+            value=self.tokenizer.word_index.get(PAD),
         )
 
         return padded_sequences
