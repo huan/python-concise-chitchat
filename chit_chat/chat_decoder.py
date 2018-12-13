@@ -29,6 +29,7 @@ class ChatDecoder(tf.keras.Model):
             units=LATENT_UNIT_NUM,
             return_sequences=True,
         )
+        self.bi_lstm = tf.keras.layers.Bidirectional(lstm)
 
         self.bidirectional_lstm = tf.keras.layers.Bidirectional(lstm)
         self.batch_normalization = tf.keras.layers.BatchNormalization()
