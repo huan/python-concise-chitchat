@@ -31,23 +31,23 @@ class ChatDecoder(tf.keras.Model):
         )
         self.bi_lstm = tf.keras.layers.Bidirectional(lstm)
 
-        dense = tf.keras.layers.Dense(units=voc_size)
-        self.td_dense = tf.keras.layers.TimeDistributed(dense)
+        self.bidirectional_lstm = tf.keras.layers.Bidirectional(lstm)
+        self.batch_normalization = tf.keras.layers.BatchNormalization()
+
+        self.time_distributed = tf.keras.layers.TimeDistributed(
+            tf.keras.layers.Dense(
+                units=voc_size
+            )
+        )
 
     def call(
             self,
-            inputs: Tuple[tf.Tensor, tf.Tensor],
-            teacher_forcing_targets=None,
-            training=False,
+            inputs: tf.Tensor,
     ) -> tf.Tensor:
         '''chat decoder call'''
-        batch_size = tf.shape(inputs[0])[0]
-        # import pdb; pdb.set_trace()
 
-        batch_go_one_hot = tf.ones([batch_size, 1, 1]) \
-            * [tf.one_hot(self.indice_go, self.voc_size)]
-
-        states = inputs
+        outputs = self.bidirectional_lstm(inputs)
+        outputs =
 
         outputs = tf.zeros([batch_size, 0, self.voc_size])
         output = batch_go_one_hot
@@ -62,7 +62,7 @@ class ChatDecoder(tf.keras.Model):
 
             decoder_inputs = self.embedding(target_indice)
 
-            output, *states = self.decoder(
+            output, *states = self.bidirectional_lstm(
                 inputs=decoder_inputs,
                 initial_state=states,   # (Tensor, Tensor)
                 # state_hidden, state_cell

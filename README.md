@@ -52,6 +52,7 @@ make dataset      # generate the formated dataset
 - [A ten-minute introduction to sequence-to-sequence learning in Keras](https://blog.keras.io/a-ten-minute-introduction-to-sequence-to-sequence-learning-in-keras.html)
 - [Use tf.clip_by_global_norm for gradient clipping](https://stackoverflow.com/a/44798131/1123955)
 - [Understanding Python's "with" statement](http://effbot.org/zone/python-with-statement.htm)
+- [How to Use the TimeDistributed Layer for Long Short-Term Memory Networks in Python](https://machinelearningmastery.com/timedistributed-layer-for-long-short-term-memory-networks-in-python/)
 
 ## TODO
 

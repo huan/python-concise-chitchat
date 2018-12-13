@@ -24,14 +24,21 @@ class ChitEncoder(tf.keras.Model):
             units=LATENT_UNIT_NUM,
         )
 
-        self.repeat = tf.keras.layers.RepeatVector(MAX_LEN)
+        # self.encoder = lstm
+        self.bidirectional_lstm = tf.keras.layers.Bidirectional(lstm)
+        self.batch_normalzation = tf.keras.layers.BatchNormalization()
+
+        self.repeat_vector = tf.keras.layers.RepeatVector(MAX_LEN)
 
     def call(
             self,
             inputs: List[List[int]],  # shape: [batch_size, max_len]
     ) -> tf.Tensor:
         inputs_embedding = self.embedding(tf.convert_to_tensor(inputs))
-        lstm_output = self.lstm(inputs_embedding)
-        output = self.repeat(lstm_output)
 
-        return output
+        output = self.bidirectional_lstm(inputs_embedding)
+        output = self.batch_normalzation(output)
+
+        outputs = self.repeat_vector(output)
+
+        return outputs    # shape: ([latent_unit_num], [latent_unit_num])
