@@ -15,7 +15,7 @@ if [[ ! "$DOCKER_CMD" ]]; then
     IMAGE_NAME=tensorflow/tensorflow:nightly-devel-gpu-py3
   fi
 
-  if [[ "$DOCKER_PULL" ]]; then
+  if [[ "$PULL" ]]; then
     docker pull ${IMAGE_NAME}
   fi
 fi
