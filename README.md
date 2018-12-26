@@ -41,6 +41,8 @@ make dataset      # generate the formated dataset
 
 - [简单粗暴TensorFlow | A Concise Handbook of TensorFlow](https://tf.wiki)
 - [Quick guide to run TensorBoard in Google Colab](https://www.dlology.com/blog/quick-guide-to-run-tensorboard-in-google-colab/)
+- [Visualizing A Neural Machine Translation Model (Mechanics of Seq2seq Models With Attention)](https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/)
+- [Neural Machine Translation (seq2seq) Tutorial](https://github.com/tensorflow/nmt)
 
 ## SEE ALSO
 
