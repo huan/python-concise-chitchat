@@ -45,7 +45,10 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
         query = '{} {} {}'.format(GO, query, DONE)
         # Evaluate sentence
         query_sequence = vocabulary.texts_to_padded_sequences([query])[0]
-        response_sequence = chitchat.predict(query_sequence)
+        response_sequence = chitchat.predict(
+            query_sequence,
+            # temperature=0.3,
+        )
 
         # Format and print response sentence
         response_word_list = [
@@ -54,9 +57,11 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
             if indice != 0 and indice != word_index[DONE]
         ]
 
-        print('Bot query:', query_sequence)
-        print('Bot response:', response_sequence)
-        print('Bot:', ' '.join(response_word_list))
+        # import pdb; pdb.set_trace()
+        print('> {}'.format(' '.join(map(str, query_sequence))))
+        print('{} <'.format(' '.join(map(str, response_sequence))))
+        print('{} <'.format(' '.join(response_word_list)))
+        print('\n')
 
 
 main()

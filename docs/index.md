@@ -22,7 +22,7 @@ How are you
 首先，还是实现一个简单的 ``DataLoader`` 类来读取文本，
 
 ```py
-DATASET_URL = 'https://github.com/zixia/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
+DATASET_URL = 'https://github.com/huan/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
 DATASET_FILE_NAME = 'concise-chit-chat-dataset.txt.gz'
 LATENT_UNIT_NUM = 100
 EMBEDDING_DIM = 50

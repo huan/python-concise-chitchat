@@ -17,6 +17,11 @@ from .config import (
 )
 from .vocabulary import Vocabulary
 
+# TODO:
+#   - [ ] RepeatVector
+#   - [ ] PAD -> Tokenize
+#   - [ ] Remove GO/DONE in Encoder
+
 
 class ChitChat(tf.keras.Model):
     '''doc'''
