@@ -5,8 +5,7 @@ from chit_chat import (
     ChitChat,
     DataLoader,
     Vocabulary,
-    DONE,
-    GO,
+    EOS,
 )
 
 tf.enable_eager_execution()
@@ -35,14 +34,14 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
     index_word = vocabulary.tokenizer.index_word
     word_index = vocabulary.tokenizer.word_index
 
-    print('GO: %d, DONE: %d' % (word_index[GO], word_index[DONE]))
+    print('EOS: %d' % (word_index[EOS]))
 
     while True:
         query = input('> ').lower()
         if query == 'q' or query == 'quit':
             break
         query = data_loader.preprocess(query)
-        query = '{} {} {}'.format(GO, query, DONE)
+        query = '{} {}'.format(query, EOS)
         # Evaluate sentence
         query_sequence = vocabulary.texts_to_padded_sequences([query])[0]
         response_sequence = chitchat.predict(
@@ -54,7 +53,7 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
         response_word_list = [
             index_word[indice]
             for indice in response_sequence
-            if indice != 0 and indice != word_index[DONE]
+            if indice != 0 and indice != word_index[EOS]
         ]
 
         # import pdb; pdb.set_trace()

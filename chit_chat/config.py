@@ -1,9 +1,7 @@
 '''doc'''
 
-# GO for start of the sentence
-# DONE for end of the sentence
-GO = '\b'
-DONE = '\a'
+# End of Sentence, and Padding
+EOS = '\t'
 PAD = '\0'
 
 # max words per sentence

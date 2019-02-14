@@ -7,7 +7,6 @@ import tensorflow as tf
 
 from .config import (
     LATENT_UNIT_NUM,
-    MAX_LEN,
 )
 
 
@@ -20,25 +19,21 @@ class ChitEncoder(tf.keras.Model):
         super().__init__()
         self.embedding = embedding
 
-        self.lstm = tf.keras.layers.CuDNNLSTM(
+        lstm = tf.keras.layers.CuDNNLSTM(
             units=LATENT_UNIT_NUM,
         )
 
         # self.encoder = lstm
         self.bidirectional_lstm = tf.keras.layers.Bidirectional(lstm)
-        self.batch_normalzation = tf.keras.layers.BatchNormalization()
-
-        self.repeat_vector = tf.keras.layers.RepeatVector(MAX_LEN)
 
     def call(
             self,
             inputs: List[List[int]],  # shape: [batch_size, max_len]
+            training=None,
+            mask=None,
     ) -> tf.Tensor:
-        inputs_embedding = self.embedding(tf.convert_to_tensor(inputs))
-
-        output = self.bidirectional_lstm(inputs_embedding)
-        output = self.batch_normalzation(output)
-
-        outputs = self.repeat_vector(output)
+        outputs = tf.convert_to_tensor(inputs)
+        outputs = self.embedding(outputs)
+        outputs = self.bidirectional_lstm(outputs)
 
         return outputs    # shape: ([latent_unit_num], [latent_unit_num])

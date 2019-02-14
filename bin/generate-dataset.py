@@ -41,7 +41,7 @@ def preprocess_text(text: str) -> str:
     new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)
     new_text = re.sub(' +', ' ', new_text)
     new_text = re.sub(
-        '([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?',
+        r'([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?',
         r'\1 \2 \3',
         new_text,
     )

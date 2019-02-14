@@ -1,7 +1,12 @@
-'''train'''
+'''
+train
+'''
 import tensorflow as tf
 
 from chit_chat import (
+    EOS,
+    PAD,
+
     ChitChat,
     DataLoader,
     Vocabulary,
@@ -10,11 +15,15 @@ from chit_chat import (
 tf.enable_eager_execution()
 
 
-def loss(model, x, y) -> tf.Tensor:
+def loss(
+        model,
+        x,
+        y,
+        weights,
+) -> tf.Tensor:
     '''doc'''
     predictions = model(
         inputs=x,
-        teacher_forcing_targets=y,
         training=True,
     )
 
@@ -29,24 +38,11 @@ def loss(model, x, y) -> tf.Tensor:
 
     # import pdb; pdb.set_trace()
 
-    y_without_go = tf.concat(
-        [
-            y[:, 1:],
-            tf.expand_dims(tf.zeros(tf.shape(y)[0], dtype=tf.int32), axis=1)
-        ],
-        axis=1
-    ).numpy()
-
-    weights = tf.cast(
-        tf.not_equal(y_without_go, 0),
-        tf.float32,
-    )
-
     # https://stackoverflow.com/a/45823378/1123955
     t = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=y_without_go,
-            logits=predictions,
-        )
+        labels=y,
+        logits=predictions,
+    )
 
     loss_value = tf.reduce_sum(
         t * weights
@@ -58,10 +54,10 @@ def loss(model, x, y) -> tf.Tensor:
     return loss_value
 
 
-def grad(model, inputs, targets):
+def grad(model, inputs, targets, weights):
     '''doc'''
     with tf.GradientTape() as tape:
-        loss_value = loss(model, inputs, targets)
+        loss_value = loss(model, inputs, targets, weights)
 
     gradients = tape.gradient(loss_value, model.variables)
 
@@ -78,13 +74,15 @@ def grad(model, inputs, targets):
 
 def train() -> int:
     '''doc'''
-    learning_rate = 1e-2
+    learning_rate = 1e-3
     num_steps = 500000000
-    batch_size = 512
+    batch_size = 1280
 
     data_loader = DataLoader()
     vocabulary = Vocabulary(data_loader.raw_text)
     chitchat = ChitChat(vocabulary=vocabulary)
+
+    PAD_INDICE = vocabulary.tokenizer.word_index.get(PAD)
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -114,11 +112,14 @@ def train() -> int:
 
         queries_sequences = vocabulary.texts_to_padded_sequences(
             queries,
-            padding='pre',
+            # padding='pre',
         )
         responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
-        grads = grad(chitchat, queries_sequences, responses_sequences)
+        weights = tf.not_equal(responses_sequences, PAD_INDICE)
+        weights = tf.cast(weights, tf.float32)
+
+        grads = grad(chitchat, queries_sequences, responses_sequences, weights)
 
         optimizer.apply_gradients(
             grads_and_vars=zip(grads, chitchat.variables)
@@ -132,18 +133,17 @@ def train() -> int:
                 responses[:2],
                 queries_sequences[:2],
                 step,
-                loss(chitchat, queries_sequences, responses_sequences).numpy()
+                loss(chitchat, queries_sequences, responses_sequences, weights).numpy()
             )
 
         if step % 100 == 0:
             checkpoint.save('./data/save/model.ckpt')
             print('checkpoint saved.')
 
-
         with tf.contrib.summary.always_record_summaries():
             # your model code goes here
             tf.contrib.summary.scalar('loss', loss(
-                chitchat, queries_sequences, responses_sequences).numpy())
+                chitchat, queries_sequences, responses_sequences, weights).numpy())
             # print('summary had been written.')
 
     return 0
@@ -163,7 +163,7 @@ def monitor(
         step,
         loss_value,
 ) -> None:
-
+    '''doc'''
     # kernel, recurrent_kernel, bias = chitchat.encoder.lstm_encoder.variables
     # with tf.name_scope('encoder/kernel'):
     #     variable_summaries(kernel)
@@ -191,24 +191,27 @@ def monitor(
 
     predict_sequences = tf.argmax(predicts, axis=2).numpy()
 
+    EOS_INDICE = vocabulary.tokenizer.word_index.get(EOS)
+
     predict_responses = [
         ' '.join([
             vocabulary.tokenizer.index_word[i]
             for i in predict_sequence
-            if i != 0
+            if i != EOS_INDICE
         ])
         for predict_sequence in predict_sequences
     ]
 
     print('------- step %d , loss %f -------' % (step, loss_value))
-    for query, response, predict_response in zip(queries, responses, predict_responses):
+    for query, response, predict_response \
+            in zip(queries, responses, predict_responses):
         print('<<<<<<<<<<<<<<<<<<<<<<<<<<<< %s' % query)
         print('>>>>>>>>>>>>>>>>>>>>>>>>>>>> %s' % response)
         print('> %s\n' % predict_response)
 
 
 def variable_summaries(var):
-    """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+    '''Attach a lot of summaries to a Tensor (for visualization).'''
     # import pdb; pdb.set_trace()
     with tf.contrib.summary.always_record_summaries():
         with tf.name_scope('summaries'):

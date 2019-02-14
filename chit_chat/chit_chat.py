@@ -10,17 +10,11 @@ import numpy as np
 from .chit_encoder import ChitEncoder
 from .chat_decoder import ChatDecoder
 from .config import (
-    DONE,
+    EOS,
     EMBEDDING_DIM,
-    GO,
     MAX_LEN,
 )
 from .vocabulary import Vocabulary
-
-# TODO:
-#   - [ ] RepeatVector
-#   - [ ] PAD -> Tokenize
-#   - [ ] Remove GO/DONE in Encoder
 
 
 class ChitChat(tf.keras.Model):
@@ -45,9 +39,10 @@ class ChitChat(tf.keras.Model):
         self.encoder = ChitEncoder(embedding=self.embedding)
         # shape: [batch_size, state]
 
+        self.repeat_vector = tf.keras.layers.RepeatVector(MAX_LEN)
+
         self.decoder = ChatDecoder(
             embedding=self.embedding,
-            indice_go=self.word_index[GO],
             voc_size=self.voc_size,
         )
         # shape: [batch_size, max_len, voc_size]
@@ -55,18 +50,24 @@ class ChitChat(tf.keras.Model):
     def call(
             self,
             inputs: List[List[int]],  # shape: [batch_size, max_len]
-            teacher_forcing_targets: List[List[int]]=None,  # shape: [batch_size, max_len]
             training=None,
+            mask=None,
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
         # import pdb; pdb.set_trace()
 
-        context = self.encoder(inputs)
+        outputs = self.encoder(
+            inputs=inputs,
+            training=training,
+            mask=mask,
+        )
+
+        outputs = self.repeat_vector(outputs)
 
         outputs = self.decoder(
-            inputs=context,
+            inputs=outputs,
             training=training,
-            teacher_forcing_targets=teacher_forcing_targets,
+            mask=mask,
         )
         # import pdb; pdb.set_trace()
         return outputs
@@ -87,7 +88,7 @@ class ChitChat(tf.keras.Model):
 
             indice = self.__logit_to_indice(output, temperature=temperature)
 
-            if indice == self.word_index[DONE]:
+            if indice == self.word_index[EOS]:
                 break
 
             response_indices.append(indice)

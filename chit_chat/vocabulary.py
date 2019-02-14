@@ -7,8 +7,7 @@ from typing import (
 import tensorflow as tf
 
 from .config import (
-    DONE,
-    GO,
+    EOS,
     MAX_LEN,
     PAD,
 )
@@ -19,7 +18,7 @@ class Vocabulary:
     def __init__(self, text: str) -> None:
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
         self.tokenizer.fit_on_texts(
-            [DONE, GO, PAD] + re.split(
+            [EOS, PAD] + re.split(
                 r'[\n\s\t]',
                 text,
             )

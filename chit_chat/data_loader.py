@@ -13,8 +13,7 @@ import tensorflow as tf
 import numpy as np
 
 from .config import (
-    GO,
-    DONE,
+    EOS,
     MAX_LEN,
 )
 
@@ -69,8 +68,8 @@ class DataLoader():
         for line in raw_text.strip('\n').split('\n'):
             query, response = line.split('\t')
             query, response = self.preprocess(query), self.preprocess(response)
-            query_list.append('{} {} {}'.format(GO, query, DONE))
-            response_list.append('{} {} {}'.format(GO, response, DONE))
+            query_list.append('{} {}'.format(query, EOS))
+            response_list.append('{} {}'.format(response, EOS))
 
         return np.array(query_list), np.array(response_list)
 
@@ -81,7 +80,7 @@ class DataLoader():
         new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)
         new_text = re.sub(' +', ' ', new_text)
         new_text = re.sub(
-            '([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?',
+            r'([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?',
             r'\1 \2 \3',
             new_text,
         )
