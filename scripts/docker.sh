@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
 set -e
 
+IMAGE_NAME=tensorflow/tensorflow
+TAG_NAME_CPU=latest-py3
+# TAG_NAME_GPU=latest-gpu-py3
+TAG_NAME_GPU=1.13.0rc0-gpu-py3
+
+DOCKER_CMD_CPU=docker
+DOCKER_CMD_GPU=nvidia-docker
+
 if [[ ! "$NV_GPU" ]]; then
   NV_GPU=0
 fi
 
-if [[ ! "$DOCKER_CMD" ]]; then
-  DOCKER_CMD=docker
-  IMAGE_NAME=tensorflow/tensorflow:latest-py3
-
-  if [[ $(which nvidia-docker) ]]; then
-    DOCKER_CMD=nvidia-docker
-    # IMAGE_NAME=tensorflow/tensorflow:latest-gpu-py3
-    IMAGE_NAME=tensorflow/tensorflow:nightly-devel-gpu-py3
+if [[ $DOCKER_CMD ]]; then
+  if [[ ! $TAG_NAME ]]; then
+    TAG_NAME=$TAG_NAME_CPU
   fi
+elif [[ $(which nvidia-docker) ]]; then
+  DOCKER_CMD=${DOCKER_CMD_GPU}
+  TAG_NAME=${TAG_NAME_GPU}
+else
+  DOCKER_CMD=${DOCKER_CMD_CPU}
+  TAG_NAME=${TAG_NAME_CPU}
+fi
 
-  if [[ "$DOCKER_PULL" ]]; then
-    docker pull ${IMAGE_NAME}
-  fi
+if [[ "$PULL" ]]; then
+  docker pull ${IMAGE_NAME}:${TAG_NAME}
 fi
 
 if [[ ! "$CONTAINER_NAME" ]]; then
@@ -32,6 +41,7 @@ Starting Docker Container ...
 NV_GPU=$NV_GPU
 DOCKER_CMD=$DOCKER_CMD
 IMAGE_NAME=$IMAGE_NAME
+TAG_NAME=$TAG_NAME
 CONTAINER_NAME=$CONTAINER_NAME
 
 ------------------------
@@ -41,13 +51,14 @@ DOCKER_CONTAINER_ID=$(docker ps -q -a -f name="$CONTAINER_NAME")
 
 if [[ ! "$DOCKER_CONTAINER_ID" ]]; then
   echo "Creating new docker container: ${CONTAINER_NAME} ..."
+  # -u $(id -u):$(id -g) \
   $DOCKER_CMD run \
       -t -i \
       --name "$CONTAINER_NAME" \
       --mount type=bind,source="$(pwd)",target=/notebooks \
       -p 6006:6006 \
       -p 8888:8888 \
-      "$IMAGE_NAME" \
+      "${IMAGE_NAME}:${TAG_NAME}" \
       /bin/bash
 else
   echo "Resuming exiting docker container: ${CONTAINER_NAME}, press [Enter] to continue ..."
