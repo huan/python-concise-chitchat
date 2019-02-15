@@ -34,6 +34,7 @@ class ChatDecoder(tf.keras.Model):
                 units=voc_size
             )
         )
+        self.dropout = tf.keras.layers.Dropout(rate=0.5)
 
     def call(
             self,
@@ -44,6 +45,10 @@ class ChatDecoder(tf.keras.Model):
         '''chat decoder call'''
 
         outputs = self.bidirectional_lstm(inputs)
+
+        if training:
+            outputs = self.dropout(outputs)
+
         outputs = self.time_distributed(outputs)
 
         return outputs

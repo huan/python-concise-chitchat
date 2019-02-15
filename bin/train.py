@@ -74,7 +74,7 @@ def grad(model, inputs, targets, weights):
 
 def train() -> int:
     '''doc'''
-    learning_rate = 1e-3
+    learning_rate = 1e-2
     num_steps = 500000000
     batch_size = 1280
 
@@ -132,7 +132,7 @@ def train() -> int:
                 queries[:2],
                 responses[:2],
                 queries_sequences[:2],
-                step,
+                tf.train.get_or_create_global_step(),
                 loss(chitchat, queries_sequences, responses_sequences, weights).numpy()
             )
 

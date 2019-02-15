@@ -35,6 +35,7 @@ class Vocabulary:
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(
             sequence_list,
             maxlen=MAX_LEN,
+            padding='post',
             truncating='post',
             value=self.tokenizer.word_index.get(PAD),
         )

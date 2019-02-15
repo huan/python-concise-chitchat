@@ -8,7 +8,7 @@ all : clean lint
 
 .PHONY: clean
 clean:
-	echo "TODO: clean what?"
+	rm -fr data/board data/save
 
 .PHONY: lint
 lint: pylint pycodestyle flake8 mypy

@@ -26,6 +26,8 @@ class ChitEncoder(tf.keras.Model):
         # self.encoder = lstm
         self.bidirectional_lstm = tf.keras.layers.Bidirectional(lstm)
 
+        self.dropout = tf.keras.layers.Dropout(rate=0.5)
+
     def call(
             self,
             inputs: List[List[int]],  # shape: [batch_size, max_len]
@@ -35,5 +37,8 @@ class ChitEncoder(tf.keras.Model):
         outputs = tf.convert_to_tensor(inputs)
         outputs = self.embedding(outputs)
         outputs = self.bidirectional_lstm(outputs)
+
+        if training:
+            outputs = self.dropout(outputs)
 
         return outputs    # shape: ([latent_unit_num], [latent_unit_num])
