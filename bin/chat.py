@@ -8,8 +8,6 @@ from chit_chat import (
     EOS,
 )
 
-tf.enable_eager_execution()
-
 
 def main() -> int:
     '''chat main'''

@@ -51,7 +51,7 @@ class ChitChat(tf.keras.Model):
             self,
             inputs: List[List[int]],  # shape: [batch_size, max_len]
             training=None,
-            mask=None,
+            # mask=None,
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
         # import pdb; pdb.set_trace()
@@ -59,7 +59,7 @@ class ChitChat(tf.keras.Model):
         outputs = self.encoder(
             inputs=inputs,
             training=training,
-            mask=mask,
+            # mask=mask,
         )
 
         outputs = self.repeat_vector(outputs)
@@ -67,7 +67,7 @@ class ChitChat(tf.keras.Model):
         outputs = self.decoder(
             inputs=outputs,
             training=training,
-            mask=mask,
+            # mask=mask,
         )
         # import pdb; pdb.set_trace()
         return outputs

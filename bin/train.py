@@ -12,14 +12,19 @@ from chit_chat import (
     Vocabulary,
 )
 
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
+
+data_loader = DataLoader()
+vocabulary = Vocabulary(data_loader.raw_text)
+chitchat = ChitChat(vocabulary=vocabulary)
+
+PAD_INDICE = vocabulary.tokenizer.word_index.get(PAD)
 
 
-def loss(
+def loss_function(
         model,
         x,
         y,
-        weights,
 ) -> tf.Tensor:
     '''doc'''
     predictions = model(
@@ -38,26 +43,25 @@ def loss(
 
     # import pdb; pdb.set_trace()
 
+    mask = tf.not_equal(y, PAD_INDICE)
+    mask = tf.cast(mask, tf.float32)
+
     # https://stackoverflow.com/a/45823378/1123955
-    t = tf.nn.sparse_softmax_cross_entropy_with_logits(
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y,
         logits=predictions,
-    )
+    ) * mask
 
-    loss_value = tf.reduce_sum(
-        t * weights
-    )
-    # loss_value = loss_value / tf.cast(tf.shape(y)[0], tf.float32)
-    loss_value = loss_value / tf.reduce_sum(weights)
+    loss_value = tf.reduce_sum(loss)
+    loss_value = loss_value / tf.reduce_sum(mask)
 
-    # import pdb; pdb.set_trace()
     return loss_value
 
 
-def grad(model, inputs, targets, weights):
+def grad(model, inputs, targets):
     '''doc'''
     with tf.GradientTape() as tape:
-        loss_value = loss(model, inputs, targets, weights)
+        loss_value = loss_function(model, inputs, targets)
 
     gradients = tape.gradient(loss_value, model.variables)
 
@@ -66,8 +70,8 @@ def grad(model, inputs, targets, weights):
     # print('clipped_grads: ', clipped_grads)
     # print('global norm: ', global_norm.numpy())
 
-    with tf.contrib.summary.always_record_summaries():
-        tf.contrib.summary.scalar('global_norm', global_norm.numpy())
+    # with tf.summary.always_record_summaries():
+    tf.summary.scalar('global_norm', global_norm.numpy(), step=tf.compat.v1.train.get_or_create_global_step())
 
     return clipped_grads
 
@@ -76,34 +80,28 @@ def train() -> int:
     '''doc'''
     learning_rate = 1e-2
     num_steps = 500000000
-    batch_size = 1280
-
-    data_loader = DataLoader()
-    vocabulary = Vocabulary(data_loader.raw_text)
-    chitchat = ChitChat(vocabulary=vocabulary)
-
-    PAD_INDICE = vocabulary.tokenizer.word_index.get(PAD)
+    batch_size = 512
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
         vocabulary.size,
     ))
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
 
     checkpoint = tf.train.Checkpoint(
         optimizer=optimizer,
         model=chitchat,
-        optimizer_step=tf.train.get_or_create_global_step(),
+        optimizer_step=tf.compat.v1.train.get_or_create_global_step(),
     )
 
     checkpoint.restore(tf.train.latest_checkpoint('./data/save'))
     print('checkpoint restored.')
 
-    writer = tf.contrib.summary.create_file_writer('./data/board')
+    writer = tf.summary.create_file_writer('./data/board')
     writer.set_as_default()
 
-    global_step = tf.train.get_or_create_global_step()
+    global_step = tf.compat.v1.train.get_or_create_global_step()
 
     for step in range(num_steps):
         global_step.assign_add(1)
@@ -116,10 +114,7 @@ def train() -> int:
         )
         responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
-        weights = tf.not_equal(responses_sequences, PAD_INDICE)
-        weights = tf.cast(weights, tf.float32)
-
-        grads = grad(chitchat, queries_sequences, responses_sequences, weights)
+        grads = grad(chitchat, queries_sequences, responses_sequences)
 
         optimizer.apply_gradients(
             grads_and_vars=zip(grads, chitchat.variables)
@@ -132,19 +127,23 @@ def train() -> int:
                 queries[:2],
                 responses[:2],
                 queries_sequences[:2],
-                tf.train.get_or_create_global_step(),
-                loss(chitchat, queries_sequences, responses_sequences, weights).numpy()
+                tf.compat.v1.train.get_or_create_global_step(),
+                loss_function(chitchat, queries_sequences, responses_sequences).numpy()
             )
 
         if step % 100 == 0:
             checkpoint.save('./data/save/model.ckpt')
             print('checkpoint saved.')
 
-        with tf.contrib.summary.always_record_summaries():
-            # your model code goes here
-            tf.contrib.summary.scalar('loss', loss(
-                chitchat, queries_sequences, responses_sequences, weights).numpy())
-            # print('summary had been written.')
+        # your model code goes here
+        tf.summary.scalar(
+            'loss',
+            loss_function(
+                chitchat, queries_sequences, responses_sequences
+            ).numpy(),
+            step=tf.compat.v1.train.get_or_create_global_step(),
+        )
+        # print('summary had been written.')
 
     return 0
 
@@ -213,16 +212,15 @@ def monitor(
 def variable_summaries(var):
     '''Attach a lot of summaries to a Tensor (for visualization).'''
     # import pdb; pdb.set_trace()
-    with tf.contrib.summary.always_record_summaries():
-        with tf.name_scope('summaries'):
-            mean = tf.reduce_mean(var)
-            tf.contrib.summary.scalar('mean', mean)
-            with tf.name_scope('stddev'):
-                stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-            tf.contrib.summary.scalar('stddev', stddev)
-            tf.contrib.summary.scalar('max', tf.reduce_max(var))
-            tf.contrib.summary.scalar('min', tf.reduce_min(var))
-            tf.contrib.summary.histogram('histogram', var)
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.summary.scalar('mean', mean, step=tf.compat.v1.train.get_or_create_global_step())
+        with tf.name_scope('stddev'):
+            stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+        tf.summary.scalar('stddev', stddev, step=tf.compat.v1.train.get_or_create_global_step())
+        tf.summary.scalar('max', tf.reduce_max(var), step=tf.compat.v1.train.get_or_create_global_step())
+        tf.summary.scalar('min', tf.reduce_min(var), step=tf.compat.v1.train.get_or_create_global_step())
+        tf.summary.histogram('histogram', var, step=tf.compat.v1.train.get_or_create_global_step())
 
 
 main()
