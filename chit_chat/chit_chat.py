@@ -11,6 +11,8 @@ from .chit_encoder import ChitEncoder
 from .chat_decoder import ChatDecoder
 from .config import (
     EOS,
+    PAD,
+    SOS,
     EMBEDDING_DIM,
     MAX_LEN,
 )
@@ -29,6 +31,10 @@ class ChitChat(tf.keras.Model):
         self.index_word = vocabulary.tokenizer.index_word
         self.voc_size = vocabulary.size
 
+        self.indice_sos = self.word_index[SOS]
+        self.indice_eos = self.word_index[EOS]
+        self.indice_pad = self.word_index[PAD]
+
         # [batch_size, max_len] -> [batch_size, max_len, embedding_dim]
         self.embedding = tf.keras.layers.Embedding(
             input_dim=self.voc_size,
@@ -36,43 +42,70 @@ class ChitChat(tf.keras.Model):
             mask_zero=True,
         )
 
-        self.encoder = ChitEncoder(embedding=self.embedding)
+        self.encoder = ChitEncoder()
         # shape: [batch_size, state]
 
-        self.repeat_vector = tf.keras.layers.RepeatVector(MAX_LEN)
-
         self.decoder = ChatDecoder(
-            embedding=self.embedding,
             voc_size=self.voc_size,
         )
         # shape: [batch_size, max_len, voc_size]
 
+        self.decode_vocabulary = tf.keras.layers.Dense(
+            units=self.voc_size,
+            activation='softmax',
+        )
+
     def call(
             self,
             inputs: List[List[int]],  # shape: [batch_size, max_len]
-            training=None,
+            training=False,
+            teacher_forcing_targets=None,
             # mask=None,
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
         # import pdb; pdb.set_trace()
+        batch_size = len(inputs)
 
-        outputs, hidden_state = self.encoder(
-            inputs=inputs,
-            training=training,
+        inputs = tf.convert_to_tensor(inputs)
+
+        embedding_inputs = self.embedding(inputs)
+
+        encoder_outputs, encoder_hidden_state = self.encoder(
+            inputs=embedding_inputs,
+            # training=training,
             # mask=mask,
         )
 
-        outputs = tf.reduce_sum(outputs, 1)
         # import pdb; pdb.set_trace()
-        outputs = self.repeat_vector(outputs)
 
-        outputs, hidden_state = self.decoder(
-            inputs=outputs,
-            hidden_state=hidden_state,
-            training=training,
-            # mask=mask,
-        )
-        # import pdb; pdb.set_trace()
+        batch_sos_one_hot = tf.ones([batch_size, 1, 1]) \
+            * [tf.one_hot(self.indice_sos, self.voc_size)]
+
+        decoder_state = encoder_hidden_state
+
+        outputs = tf.zeros([batch_size, 0, self.voc_size])
+        decoder_output = batch_sos_one_hot
+
+        for t in range(0, MAX_LEN):
+            # import pdb; pdb.set_trace()
+            if training and teacher_forcing_targets is not None:
+                target_indice = tf.expand_dims(
+                    teacher_forcing_targets[:, t], axis=-1)
+            else:
+                target_indice = tf.argmax(decoder_output, axis=-1)
+
+            decoder_inputs = self.embedding(target_indice)
+
+            decoder_output, decoder_state = self.decoder(
+                inputs=decoder_inputs,
+                initial_state=decoder_state,
+            )
+
+            vocabulary_output = self.decode_vocabulary(decoder_output)
+            vocabulary_output = tf.expand_dims(vocabulary_output, axis=1)
+
+            outputs = tf.concat([outputs, decoder_output], axis=1)
+
         return outputs
 
     def predict(
@@ -91,7 +124,7 @@ class ChitChat(tf.keras.Model):
 
             indice = self.__logit_to_indice(output, temperature=temperature)
 
-            if indice == self.word_index[EOS]:
+            if indice == self.indice_eos:
                 break
 
             response_indices.append(indice)

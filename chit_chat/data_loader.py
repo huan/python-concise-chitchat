@@ -13,6 +13,7 @@ import tensorflow as tf
 import numpy as np
 
 from .config import (
+    SOS,
     EOS,
     MAX_LEN,
 )
@@ -34,6 +35,8 @@ class DataLoader():
 
         # dataset_file = './data/dataset.txt.gz'
 
+        # import pdb; pdb.set_trace()
+
         # with open(path, encoding='iso-8859-1') as f:
         with gzip.open(dataset_file, 'rt') as f:
             self.raw_text = f.read().lower()
@@ -48,6 +51,7 @@ class DataLoader():
     ) -> Tuple[List[List[str]], List[List[str]]]:
         '''get batch'''
         # print('corpus_list', self.corpus)
+        # import pdb; pdb.set_trace()
         batch_indices = np.random.choice(
             len(self.queries),
             size=batch_size,
@@ -68,8 +72,10 @@ class DataLoader():
         for line in raw_text.strip('\n').split('\n'):
             query, response = line.split('\t')
             query, response = self.preprocess(query), self.preprocess(response)
-            query_list.append('{} {}'.format(query, EOS))
-            response_list.append('{} {}'.format(response, EOS))
+
+            # query_list.append('{} {}'.format(query, EOS))
+            query_list.append(query)
+            response_list.append('{} {} {}'.format(SOS, response, EOS))
 
         return np.array(query_list), np.array(response_list)
 

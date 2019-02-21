@@ -4,9 +4,11 @@ train
 import tensorflow as tf
 
 from chit_chat import (
-    EOS,
-    PAD,
     BATCH_SIZE,
+    MAX_LEN,
+    EOS,
+    LEARNING_RATE,
+    PAD,
 
     ChitChat,
     DataLoader,
@@ -20,6 +22,10 @@ vocabulary = Vocabulary(data_loader.raw_text)
 chitchat = ChitChat(vocabulary=vocabulary)
 
 PAD_INDICE = vocabulary.tokenizer.word_index.get(PAD)
+
+chitchat([[1,2,3,4,5,6,7,8,9,0, 1,2,3,4,5,6,7,8,9,0]])
+print('###################################')
+print(chitchat.summary())
 
 
 def loss_function(
@@ -81,7 +87,6 @@ def grad(model, inputs, targets):
 
 def train() -> int:
     '''doc'''
-    learning_rate = 1e-2
     num_steps = 500000000
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
@@ -89,7 +94,7 @@ def train() -> int:
         vocabulary.size,
     ))
 
-    optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
+    optimizer = tf.optimizers.Adam(learning_rate=LEARNING_RATE)
 
     checkpoint = tf.train.Checkpoint(
         optimizer=optimizer,
@@ -104,6 +109,8 @@ def train() -> int:
     writer.set_as_default()
 
     global_step = tf.compat.v1.train.get_or_create_global_step()
+
+    # print(chitchat.summary())
 
     for step in range(num_steps):
         global_step.assign_add(1)

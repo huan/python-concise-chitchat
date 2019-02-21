@@ -6,7 +6,8 @@
 import tensorflow as tf
 
 from .config import (
-    GRU_UNIT_NUM,
+    DROPOUT_RATE,
+    RNN_UNIT_NUM,
 )
 
 
@@ -14,45 +15,39 @@ class ChatDecoder(tf.keras.Model):
     '''decoder'''
     def __init__(
             self,
-            embedding: tf.keras.layers.Embedding,
             voc_size: int,
     ) -> None:
         super().__init__()
 
-        self.embedding = embedding
         self.voc_size = voc_size
 
-        # lstm = tf.keras.layers.GRU(
-        self.gru = tf.keras.layers.GRU(
-            units=GRU_UNIT_NUM * 2,     # becasue the encoder is bidirectional
+        self.rnn = tf.keras.layers.GRU(
+            units=RNN_UNIT_NUM,
             return_sequences=True,
             return_state=True,
+            stateful=True,
         )
-
-        self.time_distributed = tf.keras.layers.TimeDistributed(
-            tf.keras.layers.Dense(
-                units=voc_size
-            )
-        )
-        # self.dropout = tf.keras.layers.Dropout(rate=0.2)
 
     def call(
             self,
             inputs: tf.Tensor,
-            hidden_state: tf.Tensor,
+            initial_state: tf.Tensor,
             training=None,
             # mask=None,
     ) -> tf.Tensor:
         '''chat decoder call'''
 
-        [outputs, hidden_state] = self.gru(
+        import pdb; pdb.set_trace()
+
+        # self.rnn.reset_states(initial_state)
+        xxx = self.rnn(
             inputs=inputs,
-            initial_state=hidden_state,
+            initial_state=[initial_state],
         )
 
-        # if training:
-        #     outputs = self.dropout(outputs)
+        outputs, hidden_state = xxx
 
-        outputs = self.time_distributed(outputs)
+        if training:
+            outputs = self.dropout(outputs)
 
         return outputs, hidden_state
