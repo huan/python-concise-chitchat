@@ -24,8 +24,9 @@ class ChatDecoder(tf.keras.Model):
 
         # lstm = tf.keras.layers.GRU(
         self.gru = tf.keras.layers.GRU(
-            units=GRU_UNIT_NUM,
+            units=GRU_UNIT_NUM * 2,     # becasue the encoder is bidirectional
             return_sequences=True,
+            return_state=True,
         )
 
         self.time_distributed = tf.keras.layers.TimeDistributed(
@@ -44,7 +45,7 @@ class ChatDecoder(tf.keras.Model):
     ) -> tf.Tensor:
         '''chat decoder call'''
 
-        outputs = self.gru(
+        [outputs, hidden_state] = self.gru(
             inputs=inputs,
             initial_state=hidden_state,
         )
@@ -54,4 +55,4 @@ class ChatDecoder(tf.keras.Model):
 
         outputs = self.time_distributed(outputs)
 
-        return outputs
+        return outputs, hidden_state

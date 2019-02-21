@@ -28,6 +28,8 @@ def loss_function(
         y,
 ) -> tf.Tensor:
     '''doc'''
+    # import pdb; pdb.set_trace()
+
     predictions = model(
         inputs=x,
         training=True,
@@ -108,10 +110,7 @@ def train() -> int:
 
         queries, responses = data_loader.get_batch(BATCH_SIZE)
 
-        queries_sequences = vocabulary.texts_to_padded_sequences(
-            queries,
-            # padding='pre',
-        )
+        queries_sequences = vocabulary.texts_to_padded_sequences(queries)
         responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
         grads = grad(chitchat, queries_sequences, responses_sequences)

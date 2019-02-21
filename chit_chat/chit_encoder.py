@@ -32,7 +32,7 @@ class ChitEncoder(tf.keras.Model):
             merge_mode='sum',
         )
 
-        # self.dropout = tf.keras.layers.Dropout(rate=0.2)
+        self.dropout = tf.keras.layers.Dropout(rate=0.2)
 
     def call(
             self,
@@ -40,13 +40,17 @@ class ChitEncoder(tf.keras.Model):
             training=None,
             # mask=None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        outputs = tf.convert_to_tensor(inputs)
+        inputs = tf.convert_to_tensor(inputs)
+        inputs = tf.reverse(inputs, [-1])
 
-        outputs = self.embedding(outputs)
-        [outputs, *hidden_state] = self.bi_gru(outputs)
+        outputs = self.embedding(inputs)
 
         # import pdb; pdb.set_trace()
-        # if training:
-        #     outputs = self.dropout(outputs)
+        if training:
+            outputs = self.dropout(outputs)
+
+        [outputs, *hidden_state] = self.bi_gru(outputs)
+
+        hidden_state = tf.concat(hidden_state, axis=1)
 
         return outputs, hidden_state
