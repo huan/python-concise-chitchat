@@ -6,6 +6,7 @@ import tensorflow as tf
 from chit_chat import (
     EOS,
     PAD,
+    BATCH_SIZE,
 
     ChitChat,
     DataLoader,
@@ -80,7 +81,6 @@ def train() -> int:
     '''doc'''
     learning_rate = 1e-2
     num_steps = 500000000
-    batch_size = 512
 
     print('Dataset size: {}, Vocabulary size: {}'.format(
         data_loader.size,
@@ -106,7 +106,7 @@ def train() -> int:
     for step in range(num_steps):
         global_step.assign_add(1)
 
-        queries, responses = data_loader.get_batch(batch_size)
+        queries, responses = data_loader.get_batch(BATCH_SIZE)
 
         queries_sequences = vocabulary.texts_to_padded_sequences(
             queries,

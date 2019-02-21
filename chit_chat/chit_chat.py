@@ -56,16 +56,21 @@ class ChitChat(tf.keras.Model):
         '''call'''
         # import pdb; pdb.set_trace()
 
-        outputs = self.encoder(
+        outputs, hidden_state = self.encoder(
             inputs=inputs,
             training=training,
             # mask=mask,
         )
 
+        outputs = tf.reduce_sum(outputs, 1)
+        # import pdb; pdb.set_trace()
+
         outputs = self.repeat_vector(outputs)
+        hidden_state = hidden_state[0] + hidden_state[1]
 
         outputs = self.decoder(
             inputs=outputs,
+            hidden_state=hidden_state,
             training=training,
             # mask=mask,
         )

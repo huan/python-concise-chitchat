@@ -6,7 +6,7 @@
 import tensorflow as tf
 
 from .config import (
-    LATENT_UNIT_NUM,
+    GRU_UNIT_NUM,
 )
 
 
@@ -23,12 +23,10 @@ class ChatDecoder(tf.keras.Model):
         self.voc_size = voc_size
 
         # lstm = tf.keras.layers.GRU(
-        lstm = tf.keras.layers.LSTM(
-            units=LATENT_UNIT_NUM,
+        self.gru = tf.keras.layers.GRU(
+            units=GRU_UNIT_NUM,
             return_sequences=True,
         )
-
-        self.bi_lstm = tf.keras.layers.Bidirectional(lstm)
 
         self.time_distributed = tf.keras.layers.TimeDistributed(
             tf.keras.layers.Dense(
@@ -40,14 +38,16 @@ class ChatDecoder(tf.keras.Model):
     def call(
             self,
             inputs: tf.Tensor,
+            hidden_state: tf.Tensor,
             training=None,
             # mask=None,
     ) -> tf.Tensor:
         '''chat decoder call'''
 
-        outputs = inputs
-
-        outputs = self.bi_lstm(outputs)
+        outputs = self.gru(
+            inputs=inputs,
+            initial_state=hidden_state,
+        )
 
         # if training:
         #     outputs = self.dropout(outputs)

@@ -4,6 +4,7 @@ from .data_loader import DataLoader
 from .vocabulary import Vocabulary
 
 from .config import (
+    BATCH_SIZE,
     EOS,
     PAD,
 )
@@ -11,6 +12,7 @@ from .config import (
 name = 'chit-chat'
 
 __all__ = [
+    'BATCH_SIZE',
     'EOS',
     'PAD',
 
