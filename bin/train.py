@@ -23,9 +23,9 @@ chitchat = ChitChat(vocabulary=vocabulary)
 
 PAD_INDICE = vocabulary.tokenizer.word_index.get(PAD)
 
-chitchat([[1,2,3,4,5,6,7,8,9,0, 1,2,3,4,5,6,7,8,9,0]])
-print('###################################')
-print(chitchat.summary())
+# chitchat([[1,2,3,4,5,6,7,8,9,0, 1,2,3,4,5,6,7,8,9,0]])
+# print('###################################')
+# print(chitchat.summary())
 
 
 def loss_function(
@@ -39,6 +39,7 @@ def loss_function(
     predictions = model(
         inputs=x,
         training=True,
+        teacher_forcing_targets=y,
     )
 
     # implment the following contrib function in a loop ?
@@ -59,7 +60,8 @@ def loss_function(
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y,
         logits=predictions,
-    ) * mask
+    )
+    loss = loss * mask
 
     loss_value = tf.reduce_sum(loss)
     loss_value = loss_value / tf.reduce_sum(mask)

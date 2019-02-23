@@ -21,11 +21,15 @@ class ChatDecoder(tf.keras.Model):
 
         self.voc_size = voc_size
 
-        self.rnn = tf.keras.layers.GRU(
-            units=RNN_UNIT_NUM,
+        self.gru = tf.keras.layers.GRU(
+            units=RNN_UNIT_NUM * 2,     # for forward & backword gru state
             return_sequences=True,
             return_state=True,
-            stateful=True,
+        )
+
+        self.dense = tf.keras.layers.Dense(
+            units=self.voc_size,
+            activation='softmax',
         )
 
     def call(
@@ -37,17 +41,21 @@ class ChatDecoder(tf.keras.Model):
     ) -> tf.Tensor:
         '''chat decoder call'''
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
-        # self.rnn.reset_states(initial_state)
-        xxx = self.rnn(
+        # print('shape: input:{} initial_state{}'.format(
+        #     inputs.shape,
+        #     initial_state.shape,
+        # ))
+
+        outputs, hidden_state = self.gru(
             inputs=inputs,
             initial_state=[initial_state],
         )
 
-        outputs, hidden_state = xxx
-
         if training:
             outputs = self.dropout(outputs)
+
+        outputs = self.dense(outputs)
 
         return outputs, hidden_state

@@ -39,7 +39,6 @@ class ChitChat(tf.keras.Model):
         self.embedding = tf.keras.layers.Embedding(
             input_dim=self.voc_size,
             output_dim=EMBEDDING_DIM,
-            mask_zero=True,
         )
 
         self.encoder = ChitEncoder()
@@ -49,11 +48,6 @@ class ChitChat(tf.keras.Model):
             voc_size=self.voc_size,
         )
         # shape: [batch_size, max_len, voc_size]
-
-        self.decode_vocabulary = tf.keras.layers.Dense(
-            units=self.voc_size,
-            activation='softmax',
-        )
 
     def call(
             self,
@@ -81,10 +75,10 @@ class ChitChat(tf.keras.Model):
         batch_sos_one_hot = tf.ones([batch_size, 1, 1]) \
             * [tf.one_hot(self.indice_sos, self.voc_size)]
 
+        decoder_output = batch_sos_one_hot
         decoder_state = encoder_hidden_state
 
         outputs = tf.zeros([batch_size, 0, self.voc_size])
-        decoder_output = batch_sos_one_hot
 
         for t in range(0, MAX_LEN):
             # import pdb; pdb.set_trace()
@@ -100,9 +94,6 @@ class ChitChat(tf.keras.Model):
                 inputs=decoder_inputs,
                 initial_state=decoder_state,
             )
-
-            vocabulary_output = self.decode_vocabulary(decoder_output)
-            vocabulary_output = tf.expand_dims(vocabulary_output, axis=1)
 
             outputs = tf.concat([outputs, decoder_output], axis=1)
 

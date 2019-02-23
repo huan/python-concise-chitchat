@@ -40,6 +40,7 @@ class ChitEncoder(tf.keras.Model):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         # import pdb; pdb.set_trace()
 
-        [outputs, _, hidden_state_backword] = self.bi_gru(inputs)
+        [outputs, hidden_state_forward, hidden_state_backword] = self.bi_gru(inputs)
 
-        return outputs, hidden_state_backword
+        state = tf.concat([hidden_state_forward, hidden_state_backword], axis=1)
+        return outputs, state
