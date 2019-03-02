@@ -42,23 +42,22 @@ def loss_function(
         teacher_forcing_targets=y,
     )
 
-    # implment the following contrib function in a loop ?
-    # https://stackoverflow.com/a/41135778/1123955
-    # https://stackoverflow.com/q/48025004/1123955
-    # loss_value = tf.contrib.seq2seq.sequence_loss(
-    #     prediction,
-    #     tf.convert_to_tensor(y),
-    #     weights,
-    # )
-
     # import pdb; pdb.set_trace()
 
-    mask = tf.not_equal(y, PAD_INDICE)
+    y_without_sos = tf.concat(
+        [
+            y[:, 1:],
+            tf.expand_dims(tf.fill([BATCH_SIZE], PAD_INDICE), axis=1)
+        ],
+        axis=1
+    )
+
+    mask = tf.not_equal(y_without_sos, PAD_INDICE)
     mask = tf.cast(mask, tf.float32)
 
     # https://stackoverflow.com/a/45823378/1123955
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        labels=y,
+        labels=y_without_sos,
         logits=predictions,
     )
     loss = loss * mask
@@ -199,6 +198,8 @@ def monitor(
     predict_sequences = tf.argmax(predicts, axis=2).numpy()
 
     EOS_INDICE = vocabulary.tokenizer.word_index.get(EOS)
+
+    # import pdb; pdb.set_trace()
 
     predict_responses = [
         ' '.join([

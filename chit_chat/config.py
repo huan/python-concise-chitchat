@@ -1,9 +1,9 @@
 '''doc'''
 
 # End of Sentence, and Padding
-SOS = '<start_of_sentence>'
-EOS = '<end_of_sentence>'
-PAD = '<padding>'
+SOS = '<sos>'
+EOS = '<eos>'
+PAD = '<pad>'
 
 #
 # Reference to https://pytorch.org/tutorials/beginner/chatbot_tutorial.html#run-model
@@ -12,8 +12,8 @@ EMBEDDING_DIM = 512
 RNN_UNIT_NUM = 512
 DROPOUT_RATE = 0.2
 
-BATCH_SIZE = 64
-LEARNING_RATE = 1e-4
+BATCH_SIZE = 800
+LEARNING_RATE = 1e-2
 
 # max words per sentence
 MAX_LEN = 20

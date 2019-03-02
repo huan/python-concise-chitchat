@@ -58,14 +58,14 @@ class ChitChat(tf.keras.Model):
     ) -> tf.Tensor:     # shape: [batch_size, max_len, voc_size]
         '''call'''
         # import pdb; pdb.set_trace()
-        batch_size = len(inputs)
 
+        batch_size = len(inputs)
         inputs = tf.convert_to_tensor(inputs)
 
-        embedding_inputs = self.embedding(inputs)
+        inputs = self.embedding(inputs)
 
         encoder_outputs, encoder_hidden_state = self.encoder(
-            inputs=embedding_inputs,
+            inputs=inputs,
             # training=training,
             # mask=mask,
         )
@@ -80,6 +80,7 @@ class ChitChat(tf.keras.Model):
 
         outputs = tf.zeros([batch_size, 0, self.voc_size])
 
+        # print('*'*20)
         for t in range(0, MAX_LEN):
             # import pdb; pdb.set_trace()
             if training and teacher_forcing_targets is not None:
@@ -88,6 +89,7 @@ class ChitChat(tf.keras.Model):
             else:
                 target_indice = tf.argmax(decoder_output, axis=-1)
 
+            # print('{} {}'.format(t, ' '.join([self.index_word[i] for i in target_indice.numpy()[0]])))
             decoder_inputs = self.embedding(target_indice)
 
             decoder_output, decoder_state = self.decoder(

@@ -22,14 +22,17 @@ class ChatDecoder(tf.keras.Model):
         self.voc_size = voc_size
 
         self.gru = tf.keras.layers.GRU(
-            units=RNN_UNIT_NUM * 2,     # for forward & backword gru state
+            units=RNN_UNIT_NUM,
+            # units=RNN_UNIT_NUM * 2,     # for forward & backword gru state
             return_sequences=True,
             return_state=True,
         )
 
         self.dense = tf.keras.layers.Dense(
             units=self.voc_size,
-            activation='softmax',
+            # do not use softmax at here if using
+            # sparse_softmax_cross_entropy_with_logits
+            # activation='softmax',
         )
 
     def call(
@@ -48,14 +51,14 @@ class ChatDecoder(tf.keras.Model):
         #     initial_state.shape,
         # ))
 
-        outputs, hidden_state = self.gru(
+        outputs, state = self.gru(
             inputs=inputs,
             initial_state=[initial_state],
         )
 
-        if training:
-            outputs = self.dropout(outputs)
+        # if training:
+        #     outputs = self.dropout(outputs)
 
         outputs = self.dense(outputs)
 
-        return outputs, hidden_state
+        return outputs, state
