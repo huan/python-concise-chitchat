@@ -75,7 +75,7 @@ def grad(model, inputs, targets):
 
     gradients = tape.gradient(loss_value, model.variables)
 
-    clipped_grads, global_norm = tf.clip_by_global_norm(gradients, 50.0)
+    clipped_grads, global_norm = tf.clip_by_global_norm(gradients, 5.)
     # print('gradients: ', gradients)
     # print('clipped_grads: ', clipped_grads)
     # print('global norm: ', global_norm.numpy())
