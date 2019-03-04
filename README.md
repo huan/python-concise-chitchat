@@ -55,6 +55,8 @@ make dataset      # generate the formated dataset
 - [Use tf.clip_by_global_norm for gradient clipping](https://stackoverflow.com/a/44798131/1123955)
 - [Understanding Python's "with" statement](http://effbot.org/zone/python-with-statement.htm)
 - [How to Use the TimeDistributed Layer for Long Short-Term Memory Networks in Python](https://machinelearningmastery.com/timedistributed-layer-for-long-short-term-memory-networks-in-python/)
+- [Practical seq2seq - Revisiting sequence to sequence learning, with focus on implementation details](http://complx.me/2016-12-31-practical-seq2seq/)
+- [Chatbots with Seq2Seq - Learn to build a chatbot using TensorFlow])(http://complx.me/2016-06-28-easy-seq2seq/)
 
 ## TODO
 
