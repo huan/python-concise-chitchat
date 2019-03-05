@@ -39,7 +39,7 @@ def loss_function(
     predictions = model(
         inputs=x,
         training=True,
-        # teacher_forcing_targets=y,
+        teacher_forcing_targets=y,
     )
 
     # import pdb; pdb.set_trace()
