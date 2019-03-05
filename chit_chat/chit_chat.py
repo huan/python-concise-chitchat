@@ -59,8 +59,8 @@ class ChitChat(tf.keras.Model):
         '''call'''
         # import pdb; pdb.set_trace()
 
-        batch_size = len(inputs)
         inputs = tf.convert_to_tensor(inputs)
+        batch_size = tf.shape(inputs)[0]
 
         inputs = self.embedding(inputs)
 

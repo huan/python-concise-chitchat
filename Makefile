@@ -68,3 +68,7 @@ board:
 .PHONY: chat
 chat:
 	PYTHONPATH=. python3 bin/chat.py
+
+.PHONY: save
+save:
+	PYTHONPATH=. python3 bin/save.py

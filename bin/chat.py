@@ -34,18 +34,23 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
 
     print('EOS: %d' % (word_index[EOS]))
 
+    # import pdb; pdb.set_trace()
     while True:
         query = input('> ').lower()
         if query == 'q' or query == 'quit':
             break
         query = data_loader.preprocess(query)
-        query = '{} {}'.format(query, EOS)
         # Evaluate sentence
-        query_sequence = vocabulary.texts_to_padded_sequences([query])[0]
-        response_sequence = chitchat.predict(
+        query_sequence = vocabulary.texts_to_padded_sequences([query])
+        predict = chitchat(
             query_sequence,
             # temperature=0.3,
         )
+
+        # import pdb; pdb.set_trace()
+        response_sequence = tf.argmax(predict, axis=2)
+        response_sequence = tf.squeeze(response_sequence)
+        response_sequence = response_sequence.numpy()
 
         # Format and print response sentence
         response_word_list = [

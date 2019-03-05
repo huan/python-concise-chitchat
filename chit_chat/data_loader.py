@@ -18,7 +18,7 @@ from .config import (
     MAX_LEN,
 )
 
-DATASET_URL = 'https://github.com/huan/concise-chit-chat/releases/download/v0.0.1/dataset.txt.gz'
+DATASET_URL = 'https://github.com/huan/concise-chit-chat/releases/download/v0.3.0/dataset.mini.txt.gz'
 DATASET_FILE_NAME = 'concise-chit-chat-dataset.txt.gz'
 
 
