@@ -229,7 +229,7 @@ def variable_summaries(var):
         tf.summary.scalar('stddev', stddev, step=tf.compat.v1.train.get_or_create_global_step())
         tf.summary.scalar('max', tf.reduce_max(var), step=tf.compat.v1.train.get_or_create_global_step())
         tf.summary.scalar('min', tf.reduce_min(var), step=tf.compat.v1.train.get_or_create_global_step())
-        tf.summary.histogram('histogram', var, step=tf.compat.v1.train.get_or_create_global_step())
+        # tf.summary.histogram('histogram', var, step=tf.compat.v1.train.get_or_create_global_step())
 
 
 main()

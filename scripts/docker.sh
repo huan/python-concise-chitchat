@@ -4,7 +4,9 @@ set -e
 IMAGE_NAME=tensorflow/tensorflow
 TAG_NAME_CPU=latest-py3
 # TAG_NAME_GPU=latest-gpu-py3
-TAG_NAME_GPU=1.13.0rc0-gpu-py3
+
+# for CUDA v10
+TAG_NAME_GPU=2.0.0a0-gpu-py3
 
 DOCKER_CMD_CPU=docker
 DOCKER_CMD_GPU=nvidia-docker
@@ -31,7 +33,7 @@ fi
 
 if [[ ! "$CONTAINER_NAME" ]]; then
   # CONTAINER_NAME="$(id -nu)"-concise-chit-chat
-  CONTAINER_NAME="${USER}"-concise-chit-chat
+  CONTAINER_NAME="${USER}"-python-concise-chit-chat
 fi
 
 cat <<_MSG_
