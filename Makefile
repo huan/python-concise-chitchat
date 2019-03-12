@@ -44,6 +44,8 @@ docker:
 
 .PHONY: install
 install:
+	[ -d python_venv ] || python -v venv python_venv
+	. python_venv/bin/activate
 	pip3 install -r requirements.txt
 
 .PHONY: pytest
@@ -55,20 +57,25 @@ test: pytest
 
 code:
 	# vscode need to know where the modules are by setting PYTHONPATH
+	. python_venv/bin/activate
 	PYTHONPATH=. code .
 
 .PHONY: train
 train:
+	. python_venv/bin/activate
 	PYTHONPATH=. python3 bin/train.py
 
 .PHONY: board
 board:
+	. python_venv/bin/activate
 	tensorboard --logdir=./data/board/
 
 .PHONY: chat
 chat:
+	. python_venv/bin/activate
 	PYTHONPATH=. python3 bin/chat.py
 
 .PHONY: save
 save:
+	. python_venv/bin/activate
 	PYTHONPATH=. python3 bin/save.py
