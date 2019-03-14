@@ -121,7 +121,7 @@ def train() -> int:
         queries_sequences = vocabulary.texts_to_padded_sequences(queries)
         responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
-        print(queries_sequences.shape)
+        # print(queries_sequences.shape)
 
         grads = grad(chitchat, queries_sequences, responses_sequences)
 
