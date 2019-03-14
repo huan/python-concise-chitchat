@@ -17,44 +17,14 @@ logging.basicConfig(format='', level=logging.INFO)
 LinesTuple = Tuple[int, str]
 LinesDict = Dict[int, str]
 
-MAX_LEN = 12
+MAX_LEN = 8
 # set to None to unlimit
 MAX_DATASET_SIZE = None
 
 # https://www.zhihu.com/question/20118544/answer/35639696
 # 英语为母语的4岁儿童词汇量已经有5000个，8岁词汇量为10000个。
 # 四级的词汇量大概为4000个左右，八级为10000个左右
-VOCABULARY_SIZE = 5000
-
-#
-# 1
-#
-# Load Curpos Lines to Dict
-# Preprocessing
-#
-
-
-def preprocess_text(text: str) -> str:
-    """doc"""
-    new_text = text
-
-    new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)
-    new_text = re.sub(' +', ' ', new_text)
-    new_text = re.sub(
-        r'([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?',
-        r'\1 \2 \3',
-        new_text,
-    )
-    if len(new_text.split()) > MAX_LEN:
-        new_text = (' ').join(new_text.split()[:MAX_LEN])
-        match = re.search('[.?!]', new_text)
-        if match is not None:
-            idx = match.start()
-            new_text = new_text[:idx+1]
-
-    new_text = new_text.strip().lower()
-
-    return new_text
+VOCABULARY_SIZE = 4000
 
 
 def raw_line_to_tuple(raw_line: str) -> Tuple[int, str]:
@@ -67,13 +37,45 @@ def raw_line_to_tuple(raw_line: str) -> Tuple[int, str]:
     return 0, ''
 
 
-def preprocess_tuple(id_text: LinesTuple) -> LinesTuple:
+def preprocess_tuple(id_text_tuple: LinesTuple) -> LinesTuple:
     """doc"""
-    line_id, line_text = id_text
-    new_line_text = preprocess_text(line_text)
+    line_id, line_text = id_text_tuple
+    # new_line_text = preprocess_text(line_text)
+
+    new_text = line_text
+
+    new_text = re.sub('[^a-zA-Z0-9 .,?!]', ' ', new_text)
+    new_text = re.sub(' +', ' ', new_text)
+    new_text = re.sub(
+        r'([\w]+)([,;.?!#&-\'\"-]+)([\w]+)?',
+        r'\1 \2 \3',
+        new_text,
+    )
+    new_text = re.sub(
+        r'([?!.] ).*$',
+        r'\1',
+        new_text,
+    )
+    new_text = re.sub(
+        r'(\.\.\.)*$',
+        r'\1',
+        new_text,
+    )
+
+    if len(new_text.split()) > MAX_LEN:
+        logging.info('max len exceed, skipped: {}'.format(new_text))
+        return ('', '')
+        # new_text = (' ').join(new_text.split()[:MAX_LEN])
+        # match = re.search('[.?!]', new_text)
+        # if match is not None:
+        #     idx = match.start()
+        #     new_text = new_text[:idx+1]
+
+    new_text = new_text.strip().lower()
+
     # logging.info('before preprocess: {}'.format(line_text))
     # logging.info('after preprocess: {}'.format(new_line_text))
-    return line_id, new_line_text
+    return line_id, new_text
 
 
 tokenizer = tf.keras.preprocessing.text.Tokenizer(

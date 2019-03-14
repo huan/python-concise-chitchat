@@ -5,10 +5,10 @@ import tensorflow as tf
 
 from chit_chat import (
     BATCH_SIZE,
-    MAX_LEN,
-    EOS,
+    # MAX_LEN,
+    END_TOKEN,
     LEARNING_RATE,
-    PAD,
+    PAD_TOKEN,
 
     ChitChat,
     DataLoader,
@@ -21,7 +21,7 @@ data_loader = DataLoader()
 vocabulary = Vocabulary(data_loader.raw_text)
 chitchat = ChitChat(vocabulary=vocabulary)
 
-PAD_INDICE = vocabulary.tokenizer.word_index.get(PAD)
+PAD_INDICE = vocabulary.tokenizer.word_index.get(PAD_TOKEN)
 
 # chitchat([[1,2,3,4,5,6,7,8,9,0, 1,2,3,4,5,6,7,8,9,0]])
 # print('###################################')
@@ -121,6 +121,8 @@ def train() -> int:
         queries_sequences = vocabulary.texts_to_padded_sequences(queries)
         responses_sequences = vocabulary.texts_to_padded_sequences(responses)
 
+        print(queries_sequences.shape)
+
         grads = grad(chitchat, queries_sequences, responses_sequences)
 
         optimizer.apply_gradients(
@@ -197,7 +199,7 @@ def monitor(
 
     predict_sequences = tf.argmax(predicts, axis=2).numpy()
 
-    EOS_INDICE = vocabulary.tokenizer.word_index.get(EOS)
+    EOS_INDICE = vocabulary.tokenizer.word_index.get(END_TOKEN)
 
     # import pdb; pdb.set_trace()
 

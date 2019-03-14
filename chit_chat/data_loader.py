@@ -13,8 +13,8 @@ import tensorflow as tf
 import numpy as np
 
 from .config import (
-    SOS,
-    EOS,
+    START_TOKEN,
+    END_TOKEN,
     MAX_LEN,
 )
 
@@ -75,7 +75,7 @@ class DataLoader():
 
             # query_list.append('{} {}'.format(query, EOS))
             query_list.append(query)
-            response_list.append('{} {} {}'.format(SOS, response, EOS))
+            response_list.append('{} {} {}'.format(START_TOKEN, response, END_TOKEN))
 
         return np.array(query_list), np.array(response_list)
 

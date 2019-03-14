@@ -6,9 +6,9 @@ from .vocabulary import Vocabulary
 from .config import (
     BATCH_SIZE,
     MAX_LEN,
-    EOS,
+    END_TOKEN,
     LEARNING_RATE,
-    PAD,
+    PAD_TOKEN,
 )
 
 name = 'chit-chat'
@@ -16,9 +16,9 @@ name = 'chit-chat'
 __all__ = [
     'BATCH_SIZE',
     'MAX_LEN',
-    'EOS',
+    'END_OTKEN',
     'LEARNING_RATE',
-    'PAD',
+    'PAD_TOKEN',
 
     'ChitChat',
     'DataLoader',

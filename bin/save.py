@@ -7,7 +7,7 @@ from chit_chat import (
     ChitChat,
     DataLoader,
     Vocabulary,
-    EOS,
+    END_TOKEN,
 )
 
 

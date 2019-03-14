@@ -5,7 +5,7 @@ from chit_chat import (
     ChitChat,
     DataLoader,
     Vocabulary,
-    EOS,
+    END_TOKEN,
 )
 
 
@@ -32,7 +32,7 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
     index_word = vocabulary.tokenizer.index_word
     word_index = vocabulary.tokenizer.word_index
 
-    print('EOS: %d' % (word_index[EOS]))
+    print('EOS: %d' % (word_index[END_TOKEN]))
 
     # import pdb; pdb.set_trace()
     while True:
@@ -56,7 +56,7 @@ def cli(chitchat: ChitChat, data_loader: DataLoader, vocabulary: Vocabulary):
         response_word_list = [
             index_word[indice]
             for indice in response_sequence
-            if indice != 0 and indice != word_index[EOS]
+            if indice != 0 and indice != word_index[END_TOKEN]
         ]
 
         # import pdb; pdb.set_trace()

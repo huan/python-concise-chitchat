@@ -10,9 +10,9 @@ import numpy as np
 from .chit_encoder import ChitEncoder
 from .chat_decoder import ChatDecoder
 from .config import (
-    EOS,
-    PAD,
-    SOS,
+    END_TOKEN,
+    PAD_TOKEN,
+    START_TOKEN,
     EMBEDDING_DIM,
     MAX_LEN,
 )
@@ -31,9 +31,9 @@ class ChitChat(tf.keras.Model):
         self.index_word = vocabulary.tokenizer.index_word
         self.voc_size = vocabulary.size
 
-        self.indice_sos = self.word_index[SOS]
-        self.indice_eos = self.word_index[EOS]
-        self.indice_pad = self.word_index[PAD]
+        self.indice_sos = self.word_index[START_TOKEN]
+        self.indice_eos = self.word_index[END_TOKEN]
+        self.indice_pad = self.word_index[PAD_TOKEN]
 
         # [batch_size, max_len] -> [batch_size, max_len, embedding_dim]
         self.embedding = tf.keras.layers.Embedding(
