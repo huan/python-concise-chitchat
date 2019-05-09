@@ -2,8 +2,8 @@
 
 TO BE FIXED: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/huan/concise-chit-chat/blob/master/Concise_Chit_Chat.ipynb)
 
-This repository is a Chapter for [简单粗暴TensorFlow | A Concise Handbook of TensorFlow](https://tf.wiki)
-Book Chapter: Concise Chit Chat - <https://huan.github.io/concise-chit-chat/>
+- This repository is a Chapter for [简单粗暴TensorFlow | A Concise Handbook of TensorFlow](https://tf.wiki)
+- Book Chapter: Concise Chit Chat - <https://huan.github.io/concise-chit-chat/>
 
 ## USAGE
 
