@@ -298,3 +298,7 @@ Bot:
 > faint
 Bot:
 ```
+
+## Repository
+
+本章源代码仓库：<https://github.com/huan/python-concise-chitchat>
